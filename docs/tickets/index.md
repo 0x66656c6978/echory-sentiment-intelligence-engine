@@ -14,7 +14,7 @@ just the commit message.
 
 | Ticket | Priority | Status | Phase |
 |---|---|---|---|
-| [0001-backend-bootstrap](open/0001-backend-bootstrap.md) | P0 | open | Phase 1 |
+| [0001-backend-bootstrap](finished/0001-backend-bootstrap.md) | P0 | finished | Phase 1 |
 | [0002-frontend-bootstrap](open/0002-frontend-bootstrap.md) | P0 | open | Phase 1 |
 | [0003-backend-testing-suite](open/0003-backend-testing-suite.md) | P0 | open | Phase 2 |
 | [0004-llm-observability-logging](open/0004-llm-observability-logging.md) | P1 | open | Phase 2 |
