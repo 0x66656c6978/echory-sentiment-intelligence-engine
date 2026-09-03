@@ -25,4 +25,4 @@ just the commit message.
 | [0009-required-ui-components](open/0009-required-ui-components.md) | P0 | open | Phase 4 |
 | [0010-architecture-and-submission-docs](open/0010-architecture-and-submission-docs.md) | P0 | open | Phase 4 |
 | [0011-nice-to-haves](open/0011-nice-to-haves.md) | P2 | open | Phase 5 |
-| [0012-dockerize-backend](open/0012-dockerize-backend.md) | P1 | open | Phase 1 |
+| [0012-dockerize-backend](blocked/0012-dockerize-backend.md) | P1 | blocked | Phase 1 |

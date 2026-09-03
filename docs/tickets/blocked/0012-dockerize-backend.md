@@ -16,6 +16,21 @@ Only the backend is containerized in this ticket, since the frontend doesn't exi
 (ticket 0002). The compose file should be extended once the frontend and local LLM (Ollama)
 pieces land.
 
+## Status
+
+**Blocked** — Docker isn't installed in the agent sandbox this was built in, so `docker build`/
+`docker compose up` couldn't be run directly. Instead, the exact layered-copy + install + start
+sequence the Dockerfile encodes was simulated in a scratch directory with real `npm ci`/
+`npm run start -w backend`, and it booted and served `/health` correctly — the workspace
+resolution and script wiring are sound. What's NOT verified: an actual container build (Alpine
+base image, musl libc) and `docker compose up` itself. All current dependencies (fastify, zod,
+@fastify/cors, tsx) are pure JS with no native bindings, so risk is low, but this needs a real run
+on a machine with Docker before the ticket can move to finished.
+
+**Action needed:** run `docker compose up --build` from the repo root and confirm `curl
+http://localhost:3000/health` and a real `POST /api/telemetry/stream` both work as they did
+natively in ticket 0001.
+
 ## Definition of done
 
 - `backend/Dockerfile` builds from the monorepo root context (needed because `backend` depends on
