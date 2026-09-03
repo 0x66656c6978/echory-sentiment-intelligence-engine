@@ -53,3 +53,17 @@ docker compose down                                       → clean teardown
 ```
 
 Native `npm start` path re-confirmed unaffected. Unblocked and finished.
+
+### 2026-09-03 — Cold-start measurement (per Pascal's request)
+Pascal's email confirmed Docker is preferred by Echory and asked for the initial download size and
+time-to-operational to be documented. Measured with a genuinely cold state (removed both the built
+image and the `node:20-alpine` base image first, confirmed via `docker images` before rerunning):
+
+- `docker compose up --build -d` returned in ~3.7s
+- `GET /health` first responded 200 at ~4.7s total from a cold start
+- Final image: 72.7MB compressed content size, 292MB on-disk (uncompressed layers)
+
+Measured on Felix's dev machine (Windows 11 Pro, Docker Desktop/WSL2 backend); actual pull time on
+Echory's side will vary with their network speed, but the image itself is small (Alpine base +
+pure-JS deps, no native compilation) so this should stay fast on most connections. Full numbers
+will go into README/SETUP.md via ticket 0010.

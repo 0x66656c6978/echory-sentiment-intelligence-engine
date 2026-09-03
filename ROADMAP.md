@@ -16,6 +16,10 @@ original strategy record.
 - **Reproducibility:** evaluators run the backend themselves locally. A local-model dependency is
   acceptable as long as the setup (`ollama pull ...`) is clearly documented; a cloud fallback provider
   is still built in as a latency safety net.
+- **Docker confirmed preferred by Echory** (Pascal's email, 2026-09-03) for their automated
+  evaluation, alongside the native `npm start` path. He also asked for the inference endpoint to be
+  configurable via env vars (base URL + model name) so Echory can point the backend at an external
+  model if their container has trouble running local inference — see the provider design note below.
 
 ## Phases
 
@@ -71,8 +75,12 @@ original strategy record.
 ## Key decisions locked in this iteration
 
 - **LLM strategy:** local model via Ollama as primary (GPU available, 8GB+ VRAM), with a documented
-  cloud free-tier fallback (Groq or Gemini Flash) behind a provider-switch env var — de-risks the
-  latency-scored dimension without abandoning the local-first approach.
+  cloud free-tier fallback (Groq or Gemini Flash) — de-risks the latency-scored dimension without
+  abandoning the local-first approach. Implemented as a single generic `InferenceProvider` configured
+  via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` (Ollama exposes an OpenAI-compatible
+  endpoint, so the same code serves local and cloud) rather than two hardcoded provider classes —
+  corrected from an earlier `LLM_PROVIDER=local|cloud` design after Pascal's explicit request for
+  base-URL+model configurability (see ticket 0007's log).
 - **STT dropped entirely** from scope — not required by the actual API contract.
 - **No exhaustive multi-model shootout** — a scoped shortlist (~3 models) judged against a small
   hand-labeled set, not the open-ended benchmark originally sketched in `AI_COLLABORATION.md`.
