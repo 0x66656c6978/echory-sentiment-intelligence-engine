@@ -19,3 +19,7 @@ available to design around:
 - All four elements present and visibly reacting to live data
 - Feels purpose-built for a negotiation room, not a generic data table (this is 15% of the score)
 - Launchable with a single documented command
+
+## Log
+
+_No work logged yet._

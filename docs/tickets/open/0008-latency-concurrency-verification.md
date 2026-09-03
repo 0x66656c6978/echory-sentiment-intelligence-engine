@@ -17,3 +17,7 @@ verify multiple concurrent `session_id`s don't bleed state into each other.
   correctly isolated
 - If latency target is missed on the local provider, document the decision to fall back to cloud
   for submission (via [0007](0007-provider-switch-cloud-fallback.md))
+
+## Log
+
+_No work logged yet._

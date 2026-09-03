@@ -22,3 +22,11 @@ on [0001-backend-bootstrap](0001-backend-bootstrap.md).
   `{error, details}` shape as a schema-validation failure — this regressed silently once already
   before being caught by manual probing, so it needs an automated test, not just documentation
 - `npm test` (or documented command) runs the full suite
+
+## Log
+
+### 2026-09-03 — Definition of done amended
+Added the regression-coverage bullet (error-response normalization) after
+[0013-normalize-error-response-contract](0013-normalize-error-response-contract.md) found and
+fixed a bug in this exact area that this ticket's original scope would have caught if it existed
+yet. This predates the rule requiring a Log entry for DoD edits — recorded here retroactively.

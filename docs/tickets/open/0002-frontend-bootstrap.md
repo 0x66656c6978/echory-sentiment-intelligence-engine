@@ -16,3 +16,7 @@ not the final design.
 - `npm run dev:frontend` (or documented command) launches the dashboard
 - Dashboard successfully receives and displays results from a manually-triggered backend request
 - No design polish required yet — plain list/log view is sufficient
+
+## Log
+
+_No work logged yet._

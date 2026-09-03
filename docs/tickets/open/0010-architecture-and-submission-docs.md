@@ -20,3 +20,7 @@ backend already sketches it.
 - `AI_COLLABORATION.md` updated with real tool usage, effective prompts, where AI failed and how
   it was corrected, and how suggestions were validated
 - Session summary endpoint added only if time remains after the above
+
+## Log
+
+_No work logged yet._

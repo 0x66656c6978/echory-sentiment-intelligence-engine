@@ -23,3 +23,7 @@ which model wins.
 - Results committed (e.g. `docs/benchmark-results.md`) so the model choice is transparent and
   defensible in the interview follow-up
 - Primary local model selected and wired into the backend's provider interface
+
+## Log
+
+_No work logged yet._

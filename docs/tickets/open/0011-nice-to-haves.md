@@ -19,3 +19,7 @@ submission-ready with time to spare on Saturday:
 
 N/A — this ticket is a scope container, not a single deliverable. Split off a dedicated ticket
 per item only if actually started.
+
+## Log
+
+_No work logged yet._

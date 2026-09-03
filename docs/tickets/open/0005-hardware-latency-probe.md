@@ -16,3 +16,7 @@ its shortlist.
   the actual classification prompt, not a toy "hello world")
 - Results (tokens/sec, wall-clock latency for a realistic output length) recorded in this ticket
   or a short results file, so the model shortlist decision is traceable
+
+## Log
+
+_No work logged yet._

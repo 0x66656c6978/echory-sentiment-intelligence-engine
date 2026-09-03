@@ -17,3 +17,7 @@ inference can't reliably hit the target on grading hardware, cloud is a one-line
 - Switching `.env`'s `LLM_PROVIDER` value changes behavior with no code changes
 - `.env.example` documents both paths, including how to get a free Groq/Gemini API key
 - README/SETUP.md documents the `ollama pull <model>` step needed for the local path
+
+## Log
+
+_No work logged yet._

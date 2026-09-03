@@ -16,34 +16,6 @@ Only the backend is containerized in this ticket, since the frontend doesn't exi
 (ticket 0002). The compose file should be extended once the frontend and local LLM (Ollama)
 pieces land.
 
-## Status
-
-**Blocked** — Docker isn't installed in the agent sandbox this was built in, so `docker build`/
-`docker compose up` couldn't be run directly. Instead, the exact layered-copy + install + start
-sequence the Dockerfile encodes was simulated in a scratch directory with real `npm ci`/
-`npm run start -w backend`, and it booted and served `/health` correctly — the workspace
-resolution and script wiring are sound. What's NOT verified: an actual container build (Alpine
-base image, musl libc) and `docker compose up` itself. All current dependencies (fastify, zod,
-@fastify/cors, tsx) are pure JS with no native bindings, so risk is low, but this needs a real run
-on a machine with Docker before the ticket can move to finished.
-
-**Action needed:** run `docker compose up --build` from the repo root and confirm `curl
-http://localhost:3000/health` and a real `POST /api/telemetry/stream` both work as they did
-natively in ticket 0001.
-
-**Update:** Docker was installed (via `winget install Docker.DockerDesktop`) and the Docker Desktop
-WSL2 engine confirmed running. Ran the real verification:
-
-```
-docker compose up --build -d
-curl http://localhost:3000/health                        → {"status":"ok",...}
-POST /api/telemetry/stream (realistic sarcastic payload)  → aggressive/critical, matches native run exactly
-POST /api/telemetry/stream (malformed payload)            → 400 with the same field-level Zod errors
-docker compose down                                       → clean teardown
-```
-
-Native `npm start` path re-confirmed unaffected. Unblocked and finished.
-
 ## Definition of done
 
 - `backend/Dockerfile` builds from the monorepo root context (needed because `backend` depends on
@@ -54,3 +26,30 @@ Native `npm start` path re-confirmed unaffected. Unblocked and finished.
 - `docker compose up` verified end-to-end with the same curl checks used for ticket 0001
   (valid request classified correctly, malformed request rejected with 400)
 - README documents both paths (native npm, and `docker compose up` as an alternative)
+
+## Log
+
+### 2026-09-03 — Initial build (blocked)
+Docker isn't installed in the agent sandbox this was built in, so `docker build`/`docker compose
+up` couldn't be run directly. Instead, the exact layered-copy + install + start sequence the
+Dockerfile encodes was simulated in a scratch directory with real `npm ci`/`npm run start -w
+backend`, and it booted and served `/health` correctly — the workspace resolution and script
+wiring are sound. What wasn't verified: an actual container build (Alpine base image, musl libc)
+and `docker compose up` itself. All dependencies (fastify, zod, @fastify/cors, tsx) are pure JS
+with no native bindings, so risk was assessed as low, but a real run on a machine with Docker was
+needed before this could move to finished. Marked blocked rather than claiming an unperformed
+verification.
+
+### 2026-09-03 — Docker installed, verified end-to-end
+Docker Desktop installed via `winget install Docker.DockerDesktop` at the user's request (WSL2
+backend, already had Ubuntu WSL2 set up). Ran the real verification:
+
+```
+docker compose up --build -d
+curl http://localhost:3000/health                        → {"status":"ok",...}
+POST /api/telemetry/stream (realistic sarcastic payload)  → aggressive/critical, matches native run exactly
+POST /api/telemetry/stream (malformed payload)            → 400 with the same field-level Zod errors
+docker compose down                                       → clean teardown
+```
+
+Native `npm start` path re-confirmed unaffected. Unblocked and finished.

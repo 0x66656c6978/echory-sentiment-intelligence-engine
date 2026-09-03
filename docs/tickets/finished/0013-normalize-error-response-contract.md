@@ -23,8 +23,26 @@ about to be built in ticket 0002) three different shapes to handle instead of on
 completely different status code than one that sends a slightly-wrong payload, for what is
 conceptually the same failure ("this request can't be turned into a valid TelemetryChunkRequest").
 
-## Resolution
+## Definition of done
 
+- A single Fastify-level error handler normalizes every non-5xx error (bad JSON, empty body, wrong
+  content-type, anything else Fastify itself rejects before reaching the route) into the same
+  `{error: "invalid_request", details: {...}}` shape and always 400, not 415
+- Unexpected server-side errors (5xx) get a separate, generic `{error: "internal_error", ...}`
+  shape that doesn't leak internals — distinct from client-error handling, not lumped in with it
+- All 6 edge cases from the investigation re-tested and confirmed uniform (see commit for the
+  actual before/after curl output)
+- Ticket 0003 (backend testing suite) should add regression tests for this exact behavior so it
+  doesn't silently regress — noted there, not duplicated here
+
+## Log
+
+### 2026-09-03 — Investigation
+Probed 6 edge cases beyond ticket 0001's happy-path validation (malformed JSON, empty body,
+missing Content-Type, wrong-typed field, out-of-range value, bad enum). Found 3 different error
+shapes depending on failure mode, and a missing Content-Type header returning 415 instead of 400.
+
+### 2026-09-03 — Fix
 Added a single `app.setErrorHandler` in `backend/src/app.ts` that normalizes every error Fastify
 raises outside our own route handlers into `{error: "invalid_request", details: {...}}` at 400 —
 including the previously-415 missing-Content-Type case. Genuine unexpected/server-side errors
@@ -33,6 +51,7 @@ with a generic `{error: "internal_error", ...}` shape that doesn't leak internal
 failures inside `telemetryRoutes` are unaffected — they reply directly and never reach this
 handler.
 
+### 2026-09-03 — Verification
 Before/after, all six probed cases plus the original ticket-0001 happy path:
 
 | Case | Before | After |
@@ -45,14 +64,4 @@ Before/after, all six probed cases plus the original ticket-0001 happy path:
 | Unimplemented provider (genuine server error) | unhandled → Fastify default 500 | 500, `{error: "internal_error", ...}` (distinct, no leak) |
 | Happy path | 200, contract response | 200, contract response (unchanged) |
 
-## Definition of done
-
-- A single Fastify-level error handler normalizes every non-5xx error (bad JSON, empty body, wrong
-  content-type, anything else Fastify itself rejects before reaching the route) into the same
-  `{error: "invalid_request", details: {...}}` shape and always 400, not 415
-- Unexpected server-side errors (5xx) get a separate, generic `{error: "internal_error", ...}`
-  shape that doesn't leak internals — distinct from client-error handling, not lumped in with it
-- All 6 edge cases from the investigation re-tested and confirmed uniform (see commit for the
-  actual before/after curl output)
-- Ticket 0003 (backend testing suite) should add regression tests for this exact behavior so it
-  doesn't silently regress — noted there, not duplicated here
+Cross-referenced into ticket 0003 so regression coverage isn't lost.

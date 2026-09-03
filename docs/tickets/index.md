@@ -6,9 +6,16 @@ table in the same commit.
 
 ## Ticket format
 
-Each ticket file should contain: a one-line title, priority (P0-P2), a short description, and a
-definition of done. Non-obvious reasoning about *why* a change was made belongs in the ticket, not
-just the commit message.
+Each ticket file contains, in order: a one-line title, priority (P0-P2), phase, a `Description`,
+a `Definition of done`, and a `Log`.
+
+`Description` and `Definition of done` are the stable contract for a ticket, written at creation.
+An agent may not edit either after creation without also adding a Log entry stating what changed
+and why — the Log is where reasoning, decisions, and history accumulate instead.
+
+The `Log` is a running, dated list of entries (`### YYYY-MM-DD — <short label>`) documenting work
+and thinking relevant to that specific ticket over its lifetime, regardless of which status folder
+it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet._`.
 
 ## Tasks
 
@@ -27,3 +34,4 @@ just the commit message.
 | [0011-nice-to-haves](open/0011-nice-to-haves.md) | P2 | open | Phase 5 |
 | [0012-dockerize-backend](finished/0012-dockerize-backend.md) | P1 | finished | Phase 1 |
 | [0013-normalize-error-response-contract](finished/0013-normalize-error-response-contract.md) | P1 | finished | Phase 2 |
+| [0014-standardize-ticket-format](finished/0014-standardize-ticket-format.md) | P1 | finished | N/A |

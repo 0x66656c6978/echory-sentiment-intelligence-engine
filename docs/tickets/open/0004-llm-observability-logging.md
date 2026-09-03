@@ -18,3 +18,7 @@ stretch goal only if time allows, not a blocker for anything downstream.
   name, latency_ms, prompt, raw response, parsed result
 - Logs are queryable enough to compute per-model latency stats for Phase 3
 - Langfuse noted as stretch — only attempt after the above is working and time remains
+
+## Log
+
+_No work logged yet._
