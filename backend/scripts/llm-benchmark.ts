@@ -52,11 +52,11 @@ function loadDotEnv(path: string): void {
 loadDotEnv(join(process.cwd(), ".env"));
 
 const OLLAMA_NATIVE_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-// Round 3: further non-reasoning candidates, confirmed via spot-check to
-// never emit a `reasoning` field (unlike gemma4:12b/26b, which do). See
-// docs/benchmark-results.md for Round 1 (thinking models, now discarded) and
-// Round 2 (phi4-mini/mistral/qwen2.5:1.5b/llama3.2:3b).
-const CANDIDATE_MODELS = ["gemma4:e2b", "gemma4:e4b", "ministral-3:8b", "granite4.1:3b"];
+// Prompt-improvement pass (v2 prompt): targeting granite4.1:3b specifically
+// per Felix's choice (best latency safety margin among Round 3 winners).
+// See docs/benchmark-results.md for Rounds 1-3 and sentimentClassification.ts's
+// v2 comment for exactly which failure modes this prompt revision targets.
+const CANDIDATE_MODELS = ["granite4.1:3b"];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
@@ -97,6 +97,10 @@ async function callOllama(
       ],
       stream: false,
       think: false,
+      // Ollama's default temperature (~0.8) is tuned for open-ended chat, not
+      // deterministic classification. Low but not zero, to avoid pathological
+      // repetition on some models while still favoring consistency.
+      options: { temperature: 0.2 },
       ...(format ? { format } : {}),
     }),
   });
@@ -325,7 +329,7 @@ async function main() {
     })),
   );
 
-  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-round3.json");
+  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-prompt-v2-granite.json");
   writeFileSync(outPath, JSON.stringify({ summaries, allResults }, null, 2), "utf-8");
   console.log(`\nRaw results written to ${outPath}`);
 }

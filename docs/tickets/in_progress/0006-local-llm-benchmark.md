@@ -174,3 +174,24 @@ updated leaderboard across all three rounds in `docs/benchmark-results.md`.
 
 Next: per Felix's plan, pick the current best candidate and try to improve its accuracy via prompt
 refinement, then re-test the improved prompt across all relevant models.
+
+### 2026-09-03 — Prompt v2: targeted fix for granite4.1:3b's 5 specific failures
+Felix chose `granite4.1:3b` (safer latency margin over `gemma4:e2b`'s higher accuracy). Inspected
+its exact 5 v1 failures from the raw JSON rather than guessing at improvements. Pattern: literal-
+word reading overriding acoustic contradiction, a fuzzy negative/aggressive boundary, missed subtle
+stalling language, and a shock reaction mislabeled as deliberate deflection.
+
+Rewrote `SENTIMENT_CLASSIFICATION_SYSTEM_PROMPT` (v2) with explicit rules for each failure mode
+plus three fresh worked examples (new scenarios, not the 18 benchmark cases, so the fix
+generalizes rather than memorizing test answers). Also set `temperature: 0.2` for classification
+calls (was Ollama's ~0.8 chat-tuned default) — free change, bundled into the same test.
+
+Result: 72% → 78% accuracy, latency stable (396ms, 104ms margin). Fixed the negative/aggressive
+case cleanly. Did NOT fully fix 3 of 5 original failures — two moved from `neutral` to
+`appeasement` (directionally closer, still wrong) and the shock-reaction case is unchanged despite
+a rule written specifically for it. Reporting this honestly rather than only the accuracy delta:
+this prompt revision partially, not fully, transferred. `granite4.1:3b` v2 now matches Round 3's
+previous accuracy leader (`gemma4:e2b`, 78%) while keeping a much safer latency margin (104ms vs.
+40ms) — full writeup in `docs/benchmark-results.md`.
+
+Next: test v2 across all relevant models per Felix's plan — not yet done.

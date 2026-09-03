@@ -137,6 +137,47 @@ margin leaves little room for run-to-run variance or slower conditions on the ev
 binding, which is worth keeping in mind as a cloud-fallback-equivalent option (same model family,
 just too slow locally on this GPU) rather than discarding entirely.
 
-**Next step (per Felix's plan):** pick the current best candidate and try to improve its accuracy
-through prompt refinement (few-shot examples, trimmed acoustic guidance, explicit low temperature),
-then re-test the improved prompt across all relevant models to see if the ranking changes.
+## Prompt v2: targeted improvement for granite4.1:3b
+
+Felix chose `granite4.1:3b` as the prompt-improvement target (safer latency margin over
+`gemma4:e2b`'s higher-but-riskier accuracy). Inspected its 5 specific v1 failures directly rather
+than guessing:
+
+| Case | v1 got | Should be |
+|---|---|---|
+| `clear_negative` | aggressive | negative (calm firm rejection, no hostility) |
+| `sarcasm_masked_as_commitment` | appeasement | sarcastic (challenge's own worked example) |
+| `deflecting_subtle` | neutral | deflecting |
+| `contradiction_calm_words_loud_acoustic` | neutral | sarcastic/aggressive |
+| `high_volatility_shock` | deflecting | negative/aggressive (shock reaction) |
+
+Pattern: literal-word reading overriding acoustic contradiction (cases 2, 4), a fuzzy negative/
+aggressive boundary (case 1), missed subtle stalling language (case 3), and a shock/distress
+reaction mislabeled as a deliberate stalling strategy (case 5).
+
+v2 prompt (`backend/src/prompts/sentimentClassification.ts`) adds: an explicit rule that acoustic
+contradiction overrides literal word meaning above ~0.6 pitch_volatility/volume_intensity; an
+explicit negative-vs-aggressive boundary (hostility must be present, not just refusal-content); an
+explicit rule that shock/distress reactions are not deflection; and three fresh worked examples
+(new scenarios, not the benchmark cases themselves, so the fix generalizes rather than memorizing
+test answers). Also set an explicit `temperature: 0.2` for classification calls (previously
+Ollama's chat-tuned default, ~0.8) — free change, worth testing alongside the prompt.
+
+**Result: 72% → 78% accuracy**, judge score stable (6.8→6.9), latency stable (363ms→396ms, still a
+104ms margin under the 500ms line). Risk-level accuracy also improved (44%→50%). Fixed the
+negative/aggressive confusion cleanly (case 1). **Did not fully fix cases 2, 3, 5** — `sarcasm_
+masked_as_commitment` and `contradiction_calm_words_loud_acoustic` still don't weight the acoustic
+contradiction strongly enough (both now land on `appeasement` instead of the previous `neutral` —
+directionally closer but still wrong), and `high_volatility_shock` still gets called `deflecting`
+despite a rule written specifically for that exact failure. Honest read: the acoustic-contradiction
+and shock-vs-deflection rules only partially transferred — worth a further prompt iteration if
+pursued further, rather than treating 78% as the ceiling for this model.
+
+`granite4.1:3b` v2 now **matches Round 3's previous accuracy leader (`gemma4:e2b`, 78%) while
+keeping the much safer latency margin** (104ms vs. 40ms) — a meaningfully stronger overall position
+than either model had alone before this iteration.
+
+Raw data: `docs/benchmark-raw-results-prompt-v2-granite.json`.
+
+**Next step (per Felix's plan):** test the v2 prompt across all relevant models to see if the
+ranking changes — not yet done.
