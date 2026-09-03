@@ -1,4 +1,4 @@
-import type { SentimentProvider, TelemetryChunkRequest, TelemetryChunkResponse } from "@echory/contract";
+import type { SentimentAnalysisResult, SentimentProvider, TelemetryChunkRequest } from "@echory/contract";
 
 /**
  * Generic OpenAI-compatible inference provider, configured entirely via env vars
@@ -13,13 +13,16 @@ import type { SentimentProvider, TelemetryChunkRequest, TelemetryChunkResponse }
  *
  * Implemented for real in the Phase 3 tickets: 0006 picks the model/prompt via
  * the local LLM benchmark, 0007 finishes this HTTP call and response parsing.
+ *
+ * When implemented, populate `observability` on the returned SentimentAnalysisResult
+ * (model, prompt, rawResponse, tokenCounts) — the route handler
+ * (backend/src/routes/telemetry.ts) already logs it via backend/src/observability
+ * whenever it's present, no further wiring needed here beyond returning the data.
  */
 export class InferenceProvider implements SentimentProvider {
   readonly name = "inference";
 
-  async analyze(
-    _chunk: TelemetryChunkRequest,
-  ): Promise<Omit<TelemetryChunkResponse, "chunk_id" | "processing_latency_ms">> {
+  async analyze(_chunk: TelemetryChunkRequest): Promise<SentimentAnalysisResult> {
     throw new Error("InferenceProvider is not implemented yet — see docs/tickets/open/0007-provider-switch-cloud-fallback.md");
   }
 }

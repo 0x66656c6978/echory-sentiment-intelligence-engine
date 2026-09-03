@@ -1,6 +1,32 @@
 import { describe, expect, it, afterEach } from "vitest";
+import { existsSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import type { SentimentAnalysisResult, SentimentProvider, TelemetryChunkRequest } from "@echory/contract";
 import { TelemetryChunkResponseSchema } from "@echory/contract";
 import { buildApp } from "./app.js";
+import { DEFAULT_LLM_LOG_PATH, readLLMCallLog } from "./observability/llmLogger.js";
+
+class FakeInferenceProvider implements SentimentProvider {
+  readonly name = "inference";
+  async analyze(_chunk: TelemetryChunkRequest): Promise<SentimentAnalysisResult> {
+    return {
+      classification: {
+        sentiment: "positive",
+        confidence: 0.9,
+        volatility_flag: false,
+        hidden_intent: "agreement_signal",
+        mitigation_suggestion: "Reinforce alignment",
+        risk_level: "low",
+      },
+      observability: {
+        model: "fake-model-for-test",
+        prompt: "test prompt",
+        rawResponse: '{"sentiment":"positive"}',
+        tokenCounts: { prompt: 42, completion: 7 },
+      },
+    };
+  }
+}
 
 const VALID_REQUEST = {
   chunk_id: "chunk_int_001",
@@ -117,5 +143,40 @@ describe("POST /api/telemetry/stream — genuine server errors stay distinct", (
 
     expect(response.statusCode).toBe(500);
     expect(response.json()).toMatchObject({ error: "internal_error" });
+  });
+});
+
+describe("POST /api/telemetry/stream — LLM call observability logging (ticket 0004)", () => {
+  afterEach(() => {
+    if (existsSync(DEFAULT_LLM_LOG_PATH)) rmSync(DEFAULT_LLM_LOG_PATH);
+  });
+
+  it("logs the call when the provider returns observability data", async () => {
+    const app = await buildApp(new FakeInferenceProvider());
+    const request = { ...VALID_REQUEST, chunk_id: "chunk_observability_test" };
+    const response = await app.inject({ method: "POST", url: "/api/telemetry/stream", payload: request });
+
+    expect(response.statusCode).toBe(200);
+
+    const logged = readLLMCallLog().filter((e) => e.chunk_id === "chunk_observability_test");
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({
+      chunk_id: "chunk_observability_test",
+      session_id: request.session_id,
+      provider: "inference",
+      model: "fake-model-for-test",
+      prompt: "test prompt",
+      raw_response: '{"sentiment":"positive"}',
+      token_counts: { prompt: 42, completion: 7 },
+    });
+  });
+
+  it("does not log anything for the placeholder provider (no LLM call was made)", async () => {
+    const app = await buildApp(); // defaults to placeholder
+    const request = { ...VALID_REQUEST, chunk_id: "chunk_no_observability_test" };
+    await app.inject({ method: "POST", url: "/api/telemetry/stream", payload: request });
+
+    const logged = readLLMCallLog().filter((e) => e.chunk_id === "chunk_no_observability_test");
+    expect(logged).toHaveLength(0);
   });
 });

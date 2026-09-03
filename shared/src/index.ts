@@ -92,7 +92,28 @@ export type SessionSummaryResponse = z.infer<typeof SessionSummaryResponseSchema
 
 // ─── LLM provider seam (Phase 3 implements local + cloud against this) ──────
 
+export type SentimentClassification = Omit<TelemetryChunkResponse, "chunk_id" | "processing_latency_ms">;
+
+/**
+ * Present only for providers that actually made an LLM call (i.e. not the
+ * rule-based placeholder). The backend logs this alongside chunk_id/session_id
+ * for observability (see backend/src/observability) whenever it's present —
+ * a provider that populates this gets logging automatically, no route changes
+ * needed.
+ */
+export interface SentimentAnalysisObservability {
+  model?: string;
+  prompt?: string;
+  rawResponse?: string;
+  tokenCounts?: { prompt?: number; completion?: number };
+}
+
+export interface SentimentAnalysisResult {
+  classification: SentimentClassification;
+  observability?: SentimentAnalysisObservability;
+}
+
 export interface SentimentProvider {
   readonly name: string;
-  analyze(chunk: TelemetryChunkRequest): Promise<Omit<TelemetryChunkResponse, "chunk_id" | "processing_latency_ms">>;
+  analyze(chunk: TelemetryChunkRequest): Promise<SentimentAnalysisResult>;
 }

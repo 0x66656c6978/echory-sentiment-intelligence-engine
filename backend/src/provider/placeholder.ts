@@ -1,8 +1,9 @@
 import type {
   Sentiment,
+  SentimentAnalysisResult,
+  SentimentClassification,
   SentimentProvider,
   TelemetryChunkRequest,
-  TelemetryChunkResponse,
 } from "@echory/contract";
 
 /**
@@ -23,8 +24,6 @@ function clamp(value: number, lo: number, hi: number): number {
 function countHits(lower: string, words: string[]): number {
   return words.reduce((count, word) => (lower.includes(word) ? count + 1 : count), 0);
 }
-
-type PlaceholderResult = Omit<TelemetryChunkResponse, "chunk_id" | "processing_latency_ms">;
 
 const HIDDEN_INTENTS: Record<Sentiment, string> = {
   positive: "agreement_signal",
@@ -49,7 +48,7 @@ const MITIGATIONS: Record<Sentiment, string> = {
 export class PlaceholderProvider implements SentimentProvider {
   readonly name = "placeholder";
 
-  async analyze(chunk: TelemetryChunkRequest): Promise<PlaceholderResult> {
+  async analyze(chunk: TelemetryChunkRequest): Promise<SentimentAnalysisResult> {
     const lower = chunk.text.toLowerCase();
     const { pitch_volatility: pitch, speech_rate_wpm: wpm } = chunk.acoustic_metadata;
 
@@ -86,7 +85,7 @@ export class PlaceholderProvider implements SentimentProvider {
     const lexicalMargin = Math.abs(posHits - negHits);
     const confidence = clamp(0.5 + 0.1 * lexicalMargin + 0.25 * Math.abs(pitch - 0.5), 0.5, 0.95);
 
-    return {
+    const classification: SentimentClassification = {
       sentiment,
       confidence: Math.round(confidence * 100) / 100,
       volatility_flag: isVolatile,
@@ -94,5 +93,9 @@ export class PlaceholderProvider implements SentimentProvider {
       mitigation_suggestion: MITIGATIONS[sentiment],
       risk_level: riskLevel,
     };
+
+    // No `observability` field: this is rule-based, not an LLM call, so
+    // there's no prompt/response to log. See backend/src/observability.
+    return { classification };
   }
 }
