@@ -100,3 +100,7 @@ I'm opting to let claude generate a prompt for me that I can paste in new sessio
 ### Shared contract library
 
 When we were planning to parallelise working on features, claude suggested to add the contract library `@echory/contract`. Even though we're not parallelising work, it's still nice to have. The trade-off with shared libraries is always that you have to build them individually and that versions can drift - but in our case the contract is very stable and unlikely to change soon.
+
+### Issue management
+
+I should have defined the format for the tickets more initially - having a section with a log for agents and timestamps would have been better from the beginning.

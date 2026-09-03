@@ -26,3 +26,4 @@ just the commit message.
 | [0010-architecture-and-submission-docs](open/0010-architecture-and-submission-docs.md) | P0 | open | Phase 4 |
 | [0011-nice-to-haves](open/0011-nice-to-haves.md) | P2 | open | Phase 5 |
 | [0012-dockerize-backend](finished/0012-dockerize-backend.md) | P1 | finished | Phase 1 |
+| [0013-normalize-error-response-contract](open/0013-normalize-error-response-contract.md) | P1 | open | Phase 2 |
