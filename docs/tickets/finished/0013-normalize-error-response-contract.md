@@ -23,6 +23,28 @@ about to be built in ticket 0002) three different shapes to handle instead of on
 completely different status code than one that sends a slightly-wrong payload, for what is
 conceptually the same failure ("this request can't be turned into a valid TelemetryChunkRequest").
 
+## Resolution
+
+Added a single `app.setErrorHandler` in `backend/src/app.ts` that normalizes every error Fastify
+raises outside our own route handlers into `{error: "invalid_request", details: {...}}` at 400 —
+including the previously-415 missing-Content-Type case. Genuine unexpected/server-side errors
+(anything with no client-facing `statusCode`, e.g. a provider throwing) are kept distinct at 500
+with a generic `{error: "internal_error", ...}` shape that doesn't leak internals. Zod validation
+failures inside `telemetryRoutes` are unaffected — they reply directly and never reach this
+handler.
+
+Before/after, all six probed cases plus the original ticket-0001 happy path:
+
+| Case | Before | After |
+|---|---|---|
+| Missing fields (schema) | 400, `{error, details}` | 400, `{error, details}` (unchanged) |
+| Wrong type / bad enum / out-of-range (schema) | 400, `{error, details}` | 400, `{error, details}` (unchanged) |
+| Malformed JSON syntax | 400, Fastify's raw shape | 400, `{error, details}` |
+| Empty body | 400, Fastify's raw shape | 400, `{error, details}` |
+| Missing Content-Type header | **415**, Fastify's raw shape | **400**, `{error, details}` |
+| Unimplemented provider (genuine server error) | unhandled → Fastify default 500 | 500, `{error: "internal_error", ...}` (distinct, no leak) |
+| Happy path | 200, contract response | 200, contract response (unchanged) |
+
 ## Definition of done
 
 - A single Fastify-level error handler normalizes every non-5xx error (bad JSON, empty body, wrong
