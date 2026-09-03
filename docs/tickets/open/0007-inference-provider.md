@@ -35,12 +35,26 @@ If ticket 0006 ends up choosing a non-reasoning model, the escape hatch is simpl
 in practice and the two "requirements in tension" above stop being in tension at all — worth
 keeping in mind as a factor (not the only factor) in that ticket's model choice.
 
+**Update:** ticket 0006 selected `phi4-mini` (non-reasoning) as primary, `granite4.1:3b`
+(non-reasoning) as the documented swap-in alternative. Both confirmed clean via the default
+OpenAI-compatible path — `INFERENCE_DISABLE_THINKING` is not needed for either and this ticket's
+"tension" doesn't actually arise for the current choice. One real implementation detail found while
+confirming this: Ollama's **native** `/api/chat` takes structured-output schemas via a `format`
+field, but its **OpenAI-compatible** `/v1/chat/completions` endpoint uses the OpenAI-standard
+`response_format: {type: "json_schema", json_schema: {name, schema}}` shape instead — different
+field name and nesting, not just a passthrough. Without it (plain prompting only), `phi4-mini`
+wrapped its JSON in markdown code fences and `granite4.1:3b` dropped `risk_level` entirely — the
+exact same missing-field failure mode ticket 0006 found and fixed on the native path. `response_
+format` must be used on this ticket's default path, not skipped just because the model is
+non-reasoning.
+
 ## Definition of done
 
 - Default path: `InferenceProvider.analyze()` makes a real OpenAI-compatible chat-completions call
-  using `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY`, parses the response into the
-  contract shape, handles malformed/non-JSON model output gracefully (Zod-validated, clear error
-  rather than an unhandled exception)
+  using `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY`, **including `response_format`
+  with the JSON schema** (confirmed necessary even for non-reasoning models — see the note above),
+  parses the response into the contract shape, handles malformed/non-JSON model output gracefully
+  (Zod-validated, clear error rather than an unhandled exception)
 - Verified this default path actually works against a **real external endpoint change** — not
   just local Ollama — e.g. pointing `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` at
   Groq with no code changes, confirming Pascal's explicit ask is genuinely satisfied
@@ -92,3 +106,14 @@ ticket 0005 found. No ticket 0015 was created. Renamed the file from
 `0007-inference-provider.md` (final) — updated cross-references in `docs/tickets/index.md`,
 ticket 0001's log, ticket 0008, `backend/src/provider/inference.ts`, and `ROADMAP.md` to the final
 filename.
+
+### 2026-09-03 — Model chosen (phi4-mini); response_format requirement confirmed
+Ticket 0006 finished: `phi4-mini` selected as primary (granite4.1:3b as documented swap-in), both
+non-reasoning, both confirmed clean via the default OpenAI-compatible path. Verified with a direct
+curl check before finalizing: without `response_format`, `phi4-mini` wraps JSON in markdown fences
+and `granite4.1:3b` drops `risk_level` entirely (same missing-field failure ticket 0006 found on
+Ollama's native API, now confirmed on the OpenAI-compatible path too). With OpenAI's `response_
+format: {type: "json_schema", json_schema: {name, schema}}` shape (different field name/nesting
+than Ollama native's `format`), both produce clean, complete JSON. Added as an explicit DoD
+requirement rather than leaving it implicit. `backend/.env.example` updated with `phi4-mini` as
+the default `INFERENCE_MODEL` and `granite4.1:3b` documented as the swap-in alternative.

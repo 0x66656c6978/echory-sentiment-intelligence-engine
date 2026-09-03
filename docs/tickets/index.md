@@ -26,7 +26,7 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0003-backend-testing-suite](finished/0003-backend-testing-suite.md) | P0 | finished | Phase 2 |
 | [0004-llm-observability-logging](finished/0004-llm-observability-logging.md) | P1 | finished | Phase 2 |
 | [0005-hardware-latency-probe](finished/0005-hardware-latency-probe.md) | P0 | finished | Phase 3 |
-| [0006-local-llm-benchmark](in_progress/0006-local-llm-benchmark.md) | P0 | in_progress | Phase 3 |
+| [0006-local-llm-benchmark](finished/0006-local-llm-benchmark.md) | P0 | finished | Phase 3 |
 | [0007-inference-provider](open/0007-inference-provider.md) | P0 | open | Phase 3 |
 | [0008-latency-concurrency-verification](open/0008-latency-concurrency-verification.md) | P0 | open | Phase 4 |
 | [0009-required-ui-components](open/0009-required-ui-components.md) | P0 | open | Phase 4 |

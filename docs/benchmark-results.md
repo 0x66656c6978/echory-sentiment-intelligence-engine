@@ -1,5 +1,16 @@
 # Local LLM Quality Benchmark Results (Ticket 0006)
 
+## Final decision
+
+**Primary: `phi4-mini`. Swap-in alternative: `granite4.1:3b`** (change `INFERENCE_MODEL` alone, no
+code changes). Both are non-reasoning models verified clean on the real production path
+(OpenAI-compatible endpoint with `response_format` JSON-schema enforcement — see ticket 0007's
+log). Chosen over the higher-scoring `gemma4:e2b` after an independent holdout-set check showed
+`gemma4:e2b`'s lead was ~19 points of overfitting to the benchmark's own test set; all three
+converge to 70% accuracy on genuinely unseen cases, at which point `phi4-mini`'s meaningfully
+better risk-level accuracy (70% vs. 50%) and safer latency margin (94ms vs. `gemma4:e2b`'s
+collapsed 5ms) made it the clear pick. Full reasoning below and in ticket 0006's log.
+
 **Method:** 18 hand-labeled test cases (`backend/scripts/benchmark-test-set.ts`) deliberately
 targeting sarcasm, deflection, aggression, appeasement, and acoustic/verbal contradiction — not
 just easy positive/negative/neutral cases. One includes `docs/CHALLENGE.md`'s own worked example

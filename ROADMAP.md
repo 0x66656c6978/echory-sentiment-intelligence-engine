@@ -42,15 +42,16 @@ original strategy record.
 - Frontend smoke test (Playwright) — cut if time-pressured
 
 ### Phase 3 — Local LLM benchmark + prompt design (formerly "speech2text", repurposed — no STT needed)
-- Hardware probe done (ticket 0005, `docs/hardware-probe-results.md`): real numbers narrowed the
-  field further than expected. Only `llama3.2:1b` (1B, 174ms avg) clears the 250ms target with
-  headroom; `qwen3.5:4b` (566ms), `qwen3:8b` (1040ms), and `qwen3.5:9b` (1472ms) all miss it. Also
-  found every currently-pulled model defaults to a "thinking" mode that Ollama's OpenAI-compatible
-  endpoint can't suppress (only its native API can) — affects ticket 0007's provider design
-  depending on which model gets chosen.
-- This creates a real tension with Nuance Detection Accuracy (30% weight): benchmark
-  `llama3.2:1b`'s actual quality rather than assuming a 1B model is sufficient just because it's
-  fast, and treat the cloud fallback as a serious primary contender if the quality gap is large
+- Hardware probe done (ticket 0005): found every "thinking"-capable model (Qwen3.x family)
+  structurally too slow for the latency budget regardless of prompting — reasoning capability
+  is baked into the architecture, not a runtime toggle. All such models discarded from further
+  consideration.
+- Benchmark done (ticket 0006, `docs/benchmark-results.md`): 12 models across 4 rounds, one prompt
+  iteration, and an independent holdout-set check that caught real overfitting (a leading
+  candidate's accuracy lead turned out to be ~19 points of test-set fitting, not genuine quality).
+  **Final choice: `phi4-mini` primary, `granite4.1:3b` swap-in alternative** (change
+  `INFERENCE_MODEL` alone) — both non-reasoning, 70% holdout accuracy, safe latency margins
+  (94-107ms under the 500ms line).
 - Small hand-labeled test set (~15-20 chunks) deliberately targeting sarcasm, deflection, aggression,
   appeasement, and volatility — not just easy positive/negative cases
 - Stronger model (cloud, e.g. Gemini Flash or Groq Llama-70B) as LLM-judge; results stored in-repo
@@ -80,9 +81,12 @@ original strategy record.
 
 ## Key decisions locked in this iteration
 
-- **LLM strategy:** local model via Ollama as primary (GPU confirmed 16GB VRAM via `nvidia-smi`),
-  with the inference endpoint **always swappable to a real external OpenAI-compatible endpoint**
-  (Groq, Gemini Flash, etc.) via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone —
+- **LLM strategy:** `phi4-mini` as the primary local model (`granite4.1:3b` documented swap-in —
+  change `INFERENCE_MODEL` alone), chosen via ticket 0006's benchmark after an independent holdout
+  check ruled out a higher-scoring but overfit alternative (`gemma4:e2b`). GPU confirmed 16GB VRAM
+  via `nvidia-smi`. The inference endpoint stays **always swappable to a real external
+  OpenAI-compatible endpoint** (Groq, Gemini Flash, etc.) via
+  `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone —
   this is a hard requirement Pascal explicitly asked for by email, not just a latency safety net,
   and it must keep working with zero code changes. A separate opt-in, `INFERENCE_DISABLE_THINKING`,
   routes the local call through Ollama's native API instead when the chosen model needs "thinking"

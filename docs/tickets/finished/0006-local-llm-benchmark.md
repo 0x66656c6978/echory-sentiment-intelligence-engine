@@ -228,3 +228,24 @@ unlike `gemma4:e2b`'s raw-accuracy edge, suggesting it's a genuine strength, not
 
 Updated recommendation: `phi4-mini` or `granite4.1:3b`, not `gemma4:e2b`. Full analysis in
 `docs/benchmark-results.md`. Final choice between the two flagged for Felix.
+
+### 2026-09-03 — Final decision: phi4-mini primary, granite4.1:3b swap-in
+Felix: "Let's use phi4-mini for now but allow for swapping to granite4.1:3b." Before finalizing,
+verified both work cleanly via the actual production default path (OpenAI-compatible endpoint,
+not just Ollama's native API used throughout this benchmark) — found that without `response_
+format`, `phi4-mini` wraps JSON in markdown fences and `granite4.1:3b` drops `risk_level`
+entirely (same missing-field failure mode as the original llama3.2:1b discovery, now confirmed on
+this path too). With OpenAI's `response_format: {type: "json_schema", ...}` shape, both are clean.
+Flagged as an explicit DoD requirement on ticket 0007, which implements the real call.
+
+`backend/.env.example` updated: `INFERENCE_MODEL=phi4-mini` is now the default, with
+`granite4.1:3b` documented as the one-line swap-in alternative (just change `INFERENCE_MODEL`, no
+code changes). Interpreting this ticket's last DoD bullet ("selected and wired into the backend's
+provider interface") as satisfied by this default-configuration step — the actual HTTP call
+implementation is ticket 0007's explicit, separate scope, not re-done here.
+
+**Final summary for anyone reading only this ticket:** benchmarked 12 models across 4 rounds (4
+"thinking" models discarded after ticket 0005's latency finding, 8 non-reasoning models tested),
+iterated the prompt once with a documented partial fix, and caught a real overfitting risk via an
+independent holdout set before finalizing. `phi4-mini` (70% holdout accuracy, best risk-level
+accuracy, 94ms latency margin) is the result.
