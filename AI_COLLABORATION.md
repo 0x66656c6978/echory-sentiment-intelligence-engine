@@ -96,3 +96,7 @@ When I looked over claude's plan I did not see that it took the step to dockeris
 
 Working in the same session with claude will make it slower and slower. It's a trade off - telling claude to work on the next feature in the same session allows it to access all previous context - but at the cost of running and thinking for longer.
 I'm opting to let claude generate a prompt for me that I can paste in new sessions to kick off work on new issues. The prompt gives the agent all the information to find its context fast in the documentation. I'm using this prompt starting from Phase 2.
+
+### Shared contract library
+
+When we were planning to parallelise working on features, claude suggested to add the contract library `@echory/contract`. Even though we're not parallelising work, it's still nice to have. The trade-off with shared libraries is always that you have to build them individually and that versions can drift - but in our case the contract is very stable and unlikely to change soon.
