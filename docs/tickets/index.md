@@ -22,7 +22,7 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | Ticket | Priority | Status | Phase |
 |---|---|---|---|
 | [0001-backend-bootstrap](finished/0001-backend-bootstrap.md) | P0 | finished | Phase 1 |
-| [0002-frontend-bootstrap](open/0002-frontend-bootstrap.md) | P0 | open | Phase 1 |
+| [0002-frontend-bootstrap](in_progress/0002-frontend-bootstrap.md) | P0 | in_progress | Phase 1 |
 | [0003-backend-testing-suite](open/0003-backend-testing-suite.md) | P0 | open | Phase 2 |
 | [0004-llm-observability-logging](open/0004-llm-observability-logging.md) | P1 | open | Phase 2 |
 | [0005-hardware-latency-probe](open/0005-hardware-latency-probe.md) | P0 | open | Phase 3 |
