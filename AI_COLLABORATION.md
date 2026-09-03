@@ -48,6 +48,7 @@ More complex reasoning about changes should be documented in the ticket.
 The agents manage the tickets themselves and it's my responsibility to check if their contents are correct and if the agents are working on the right things.
 
 For now I'll be working with 1 or 2 agents in parallel at the most, since most steps depend on each other and can't be parallelised.
+{edit 03.09.2026 12:24}: I identified that frontend and backend tasks could be run in parallel as long as the contracts are defined, stable and we use fixtures.
 
 Starting out from scratch, I'll let claude spin up a plan from the current state of this repository (including this file) and then iterate on the plan until I feel confident in it. Sometimes this will surface holes in my plan that I hadn't considered yet.
 I will also let claude create the GitHub repository since it has my connection for it.
@@ -75,3 +76,7 @@ Claude offered to use only remote free-tier models stating the additional risk o
 Asked if we should have a live demo runs a scripted chunk-streaming simulator - I said yes if we have time in the end. A few handpicked examples should be enough since the judges are going to run their own test set against our API anyways.
 
 Asked if we really need STT and made me reconsider my choice from before - Opting out unless generating the test data is becoming too complex.
+
+After we decided on a plan, I let claude create all tickets for the future from the existing knowledge.
+
+For the initial project setup and the first two phases I expect smooth sailing.

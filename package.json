@@ -1,0 +1,15 @@
+{
+  "name": "echory-sentiment-intelligence-engine",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start": "npm run start -w backend",
+    "dev": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend"
+  }
+}
