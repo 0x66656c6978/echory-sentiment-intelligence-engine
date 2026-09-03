@@ -85,3 +85,7 @@ For the initial project setup and the first two phases I expect smooth sailing.
 
 Letting claude analyse the dependency graph between the tickets, we identified a few zero-dependency tasks and false dependencies where work can be parallelised. Claude offered to kick off multiple sub-agents. I required it to run the agents with their own git worktree and so it offered to switch `isolation` to `"worktree"` - a feature I didn't know about before that gives each agent its own working tree. The caveat here is that both branch from master and if the contract changes between master and what an agent works on we'd have a real merge conflict - won't be a problem if we harden the contracts first.
 This `isolation` feature did not work though since the harness was initialized without a git repository. It tried to create sub-directories for the agents but I stopped it - not parallelising work for now since it's costing more time than expected.
+
+### Dockerizing the setup
+
+When I looked over claude's plan I did not see that it took the step to dockerise the project out - its reason was that in the challenge instructions there was no mention of Docker anywhere - it silently just took this part out. After asking about it when claude worked on the first ticket, it realised its mistake and asked how to add it back. I realised I should have clarified this with Pascal before I started, but I'm being pragmatic since there's no answer yet and assuming that Docker will be okay.
