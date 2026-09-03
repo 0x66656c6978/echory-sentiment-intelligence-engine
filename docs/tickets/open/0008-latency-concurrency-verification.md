@@ -16,8 +16,11 @@ verify multiple concurrent `session_id`s don't bleed state into each other.
 - Concurrent-session test: multiple sessions interleaved, each session's summary/history stays
   correctly isolated
 - If latency target is missed on the local provider, document the decision to fall back to cloud
-  for submission (via [0007](0007-provider-switch-cloud-fallback.md))
+  for submission (via [0007](0007-inference-provider.md))
 
 ## Log
 
-_No work logged yet._
+### 2026-09-03 — Link fix
+Ticket 0007 was renamed (`0007-provider-switch-cloud-fallback.md` → `0007-inference-provider.md`)
+when its scope was reconciled to keep cloud-swap capability alongside the local-first priority.
+Updated the cross-reference link only — no change in meaning.

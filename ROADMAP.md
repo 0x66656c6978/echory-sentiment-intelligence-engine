@@ -14,8 +14,8 @@ original strategy record.
 - **No STT needed:** the API contract only ever receives pre-transcribed `text` + precomputed
   `acoustic_metadata` as JSON. No audio processing is on the scoring-critical path.
 - **Reproducibility:** evaluators run the backend themselves locally. A local-model dependency is
-  acceptable as long as the setup (`ollama pull ...`) is clearly documented; a cloud fallback provider
-  is still built in as a latency safety net.
+  acceptable as long as the setup (`ollama pull ...`) is clearly documented; the inference endpoint
+  must also always be swappable to an external provider with no code changes (see below).
 - **Docker confirmed preferred by Echory** (Pascal's email, 2026-09-03) for their automated
   evaluation, alongside the native `npm start` path. He also asked for the inference endpoint to be
   configurable via env vars (base URL + model name) so Echory can point the backend at an external
@@ -80,13 +80,16 @@ original strategy record.
 
 ## Key decisions locked in this iteration
 
-- **LLM strategy:** local model via Ollama as primary (GPU available, 8GB+ VRAM), with a documented
-  cloud free-tier fallback (Groq or Gemini Flash) — de-risks the latency-scored dimension without
-  abandoning the local-first approach. Implemented as a single generic `InferenceProvider` configured
-  via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` (Ollama exposes an OpenAI-compatible
-  endpoint, so the same code serves local and cloud) rather than two hardcoded provider classes —
-  corrected from an earlier `LLM_PROVIDER=local|cloud` design after Pascal's explicit request for
-  base-URL+model configurability (see ticket 0007's log).
+- **LLM strategy:** local model via Ollama as primary (GPU confirmed 16GB VRAM via `nvidia-smi`),
+  with the inference endpoint **always swappable to a real external OpenAI-compatible endpoint**
+  (Groq, Gemini Flash, etc.) via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone —
+  this is a hard requirement Pascal explicitly asked for by email, not just a latency safety net,
+  and it must keep working with zero code changes. A separate opt-in, `INFERENCE_DISABLE_THINKING`,
+  routes the local call through Ollama's native API instead when the chosen model needs "thinking"
+  suppressed (see ticket 0005's finding that the OpenAI-compatible endpoint can't do this) — only
+  relevant for local reasoning models, never for the cloud-swap path. One `InferenceProvider`
+  handles both. See ticket 0007's log for the full reasoning, including a same-day reversal after
+  briefly considering deferring cloud-swap support entirely.
 - **STT dropped entirely** from scope — not required by the actual API contract.
 - **No exhaustive multi-model shootout** — a scoped shortlist (~3 models) judged against a small
   hand-labeled set, not the open-ended benchmark originally sketched in `AI_COLLABORATION.md`.

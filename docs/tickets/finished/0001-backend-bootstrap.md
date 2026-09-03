@@ -44,7 +44,7 @@ message.
 This ticket's original `.env.example` guess (`OLLAMA_BASE_URL`/`OLLAMA_MODEL` for `local`,
 `GROQ_API_KEY`/`GROQ_MODEL` for `cloud`) was replaced by a unified `INFERENCE_BASE_URL`/
 `INFERENCE_MODEL`/`INFERENCE_API_KEY` design after Pascal explicitly requested base-URL+model
-configurability by email. See [0007](../open/0007-provider-switch-cloud-fallback.md)'s Log for
+configurability by email. See [0007](../open/0007-inference-provider.md)'s Log for
 the full reasoning — noted here only for traceability since this ticket set the original
 (now-superseded) precedent. This ticket's own Definition of done is unaffected: it only required
 `.env.example` to list required env vars, not any specific naming.

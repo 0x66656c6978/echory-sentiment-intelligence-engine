@@ -23,6 +23,6 @@ export class InferenceProvider implements SentimentProvider {
   readonly name = "inference";
 
   async analyze(_chunk: TelemetryChunkRequest): Promise<SentimentAnalysisResult> {
-    throw new Error("InferenceProvider is not implemented yet — see docs/tickets/open/0007-provider-switch-cloud-fallback.md");
+    throw new Error("InferenceProvider is not implemented yet — see docs/tickets/open/0007-inference-provider.md");
   }
 }

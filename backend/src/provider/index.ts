@@ -11,7 +11,7 @@ function isProviderName(value: string): value is ProviderName {
 /**
  * Resolves the active SentimentProvider from LLM_PROVIDER. Defaults to the
  * always-available placeholder rather than failing startup, since inference
- * isn't implemented yet (see docs/tickets/open/0007-provider-switch-cloud-fallback.md).
+ * isn't implemented yet (see docs/tickets/open/0007-inference-provider.md).
  */
 export function getProvider(env: NodeJS.ProcessEnv = process.env): SentimentProvider {
   const requested = env.LLM_PROVIDER ?? "placeholder";
