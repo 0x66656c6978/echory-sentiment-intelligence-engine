@@ -66,14 +66,39 @@ terms, with real numbers now instead of a prediction.
 - All models scored 75-100% on `volatility_flag` — this signal seems to transfer well from the
   acoustic-metadata guidance regardless of model size, unlike sentiment nuance.
 
-## Recommendation (for discussion, not unilaterally decided here)
+## Round 2: additional non-reasoning candidates
 
-Given ticket 0007 already supports a fully swappable inference endpoint (Pascal's explicit
-requirement), and local models on this hardware can't hit both quality and latency at once, the
-strongest evidence-based option is to make **the cloud endpoint (Groq) the default/primary**
-configuration rather than local Ollama — Groq is specifically known for very low latency on fast
-inference hardware while running much larger, higher-quality models than anything that fits this
-GPU's latency budget. Local Ollama remains fully documented and available as an alternative
-(useful for demo/offline scenarios), but as a secondary option rather than the primary path this
-data no longer clearly supports. This reverses the roadmap's original "local-first" assumption —
-flagged for Felix's decision, not decided unilaterally here.
+Per Felix's direction, researched and tested additional small, non-hybrid-reasoning models before
+concluding cloud was necessary: `phi4-mini` (Microsoft, 3.8B), `mistral` (7B, known for reliable
+structured/JSON output), `qwen2.5:1.5b` (pre-dates the "thinking-by-default" Qwen3.x generation),
+and `llama3.2:3b` (untested larger sibling of the already-benchmarked 1B, same non-reasoning
+family). All four confirmed clean (no `reasoning` field) via direct spot-check before running the
+full suite. Same methodology as Round 1, with the warm-up fixes already applied (see ticket 0006's
+log) — measured warm-only from the start, no correction needed for this round.
+
+| Model | Sentiment accuracy | Risk-level accuracy | Volatility accuracy | Judge score (0-10) | Avg latency (warm) | Clears 500ms? |
+|---|---|---|---|---|---|---|
+| `phi4-mini` | **61%** | 50% | 75% | **6.1** | **392ms** | ✅ Yes |
+| `mistral` | 67% | 44% | 100% | 6.2 | 693ms | ❌ No |
+| `qwen2.5:1.5b` | 39% | 33% | 75% | 3.5 | 271ms | ✅ Yes |
+| `llama3.2:3b` | 56% | 44% | 75% | 4.8 | 313ms | ✅ Yes |
+
+Raw data: `docs/benchmark-raw-results-round2.json`.
+
+## Updated finding: `phi4-mini` may resolve the tension entirely
+
+Unlike every Round 1 model, `phi4-mini` clears the latency budget (392ms, ~110ms of headroom under
+the fail line) **while** nearly tripling `llama3.2:1b`'s quality (61% vs. 22% sentiment accuracy,
+judge score 6.1 vs. 3.0) — matching or beating the *quality* of Round 1's best latency-failing
+models (`mistral` 67%/`qwen3.5:4b` 72%) without their latency cost. `llama3.2:3b` is a solid second
+option in the same latency-safe range (313ms, 56% accuracy).
+
+This is a materially different picture than Round 1 suggested. The earlier recommendation to make
+Groq the cloud default no longer looks like the only viable path — `phi4-mini` deserves serious
+consideration as the primary local model. Two things worth doing before finalizing: (1) a
+consolidated re-run with all 8 models (Round 1 + Round 2) together for a clean single comparison,
+since right now the two rounds used the same methodology but were run separately, and (2) closer
+inspection of `phi4-mini`'s specific failure cases (it still missed `aggressive_overt` and several
+appeasement cases) to judge whether 61% is "good enough" for a 30%-weighted scoring dimension.
+Flagged for Felix's decision on whether to run the consolidated comparison now or proceed with
+`phi4-mini` directly.

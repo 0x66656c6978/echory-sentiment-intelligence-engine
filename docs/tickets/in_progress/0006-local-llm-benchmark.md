@@ -136,3 +136,21 @@ could let Ollama's prompt/KV-cache reuse make that one specific case measure fas
 17 for reasons unrelated to the model's real performance. Changed the warm-up to a generic,
 unrelated question ("capital of France") so every one of the 18 timed calls is equally cold
 content-wise — only the model itself is warm, not any specific prompt.
+
+### 2026-09-03 — Round 2 results: phi4-mini may resolve the tension entirely
+Pulled and spot-checked (confirmed no `reasoning` field) `phi4-mini`, `mistral`, `qwen2.5:1.5b`,
+`llama3.2:3b`, then ran the full 18-case suite on just these four per Felix's direction. Result:
+
+| Model | Sentiment acc | Judge score | Latency | Clears 500ms? |
+|---|---|---|---|---|
+| `phi4-mini` | 61% | 6.1 | 392ms | Yes |
+| `mistral` | 67% | 6.2 | 693ms | No |
+| `qwen2.5:1.5b` | 39% | 3.5 | 271ms | Yes |
+| `llama3.2:3b` | 56% | 4.8 | 313ms | Yes |
+
+`phi4-mini` clears latency with room to spare (392ms) while nearly tripling `llama3.2:1b`'s Round-1
+quality (61% vs 22%) and matching Round 1's best *latency-failing* models' quality. This changes
+the picture Round 1 suggested — Groq-as-default is no longer clearly the only path; `phi4-mini`
+deserves serious consideration as the primary local model. Full writeup in
+`docs/benchmark-results.md`. Not yet decided: whether to run a consolidated 8-model comparison
+before finalizing, or proceed with `phi4-mini` directly — surfaced for Felix.
