@@ -95,10 +95,48 @@ option in the same latency-safe range (313ms, 56% accuracy).
 
 This is a materially different picture than Round 1 suggested. The earlier recommendation to make
 Groq the cloud default no longer looks like the only viable path — `phi4-mini` deserves serious
-consideration as the primary local model. Two things worth doing before finalizing: (1) a
-consolidated re-run with all 8 models (Round 1 + Round 2) together for a clean single comparison,
-since right now the two rounds used the same methodology but were run separately, and (2) closer
-inspection of `phi4-mini`'s specific failure cases (it still missed `aggressive_overt` and several
-appeasement cases) to judge whether 61% is "good enough" for a 30%-weighted scoring dimension.
-Flagged for Felix's decision on whether to run the consolidated comparison now or proceed with
-`phi4-mini` directly.
+consideration as the primary local model.
+
+## Round 3: further non-reasoning candidates (Gemma 4 edge, Ministral, Granite)
+
+Felix asked to discard all "thinking" models on the basis that reasoning capability appears to be
+an architectural/weights-level cost, not something a runtime flag removes (see the conversation
+for the full explanation) — so all further candidates were screened to confirm they never emit a
+`reasoning` field, before spending benchmark time on them. Researched and pulled: `gemma4:e2b` /
+`gemma4:e4b` (Google's edge-optimized Gemma 4 variants, released April 2026 — notably, *unlike*
+the larger `gemma4:12b`/`26b` already ruled out, these don't even emit empty thinking tags when
+disabled, i.e. genuinely non-reasoning by design, not just suppressed), `ministral-3:8b` (Mistral's
+edge/on-device model, marketed for native JSON output), and `granite4.1:3b` (IBM, also built for
+structured JSON output). All four confirmed clean via spot-check before running the full suite.
+
+| Model | Sentiment accuracy | Risk-level accuracy | Volatility accuracy | Judge score (0-10) | Avg latency (warm) | Clears 500ms? |
+|---|---|---|---|---|---|---|
+| `gemma4:e2b` | 78% | 39% | 100% | 7.0 | 460ms | ✅ Yes (40ms margin) |
+| `gemma4:e4b` | **83%** | 50% | 100% | **7.3** | 779ms | ❌ No |
+| `ministral-3:8b` | 72% | 33% | 50% | 5.6 | 757ms | ❌ No |
+| `granite4.1:3b` | 72% | 44% | 100% | 6.8 | 363ms | ✅ Yes (137ms margin) |
+
+Raw data: `docs/benchmark-raw-results-round3.json`.
+
+## Current leaderboard across all three rounds (latency-compliant models only)
+
+| Model | Sentiment accuracy | Judge score | Latency | Margin to 500ms |
+|---|---|---|---|---|
+| **`gemma4:e2b`** | **78%** | 7.0 | 460ms | 40ms (tight) |
+| **`granite4.1:3b`** | 72% | 6.8 | 363ms | 137ms (comfortable) |
+| `phi4-mini` | 61% | 6.1 | 392ms | 108ms |
+| `llama3.2:3b` | 56% | 4.8 | 313ms | 187ms |
+| `qwen2.5:1.5b` | 39% | 3.5 | 271ms | 229ms |
+| `llama3.2:1b` | 22% | 3.0 | 226ms | 274ms |
+
+Round 3 changed the picture again, more favorably this time: `granite4.1:3b` and `gemma4:e2b` both
+clearly beat `phi4-mini` on quality while staying under the latency line. `granite4.1:3b` has the
+more comfortable safety margin (137ms vs. `gemma4:e2b`'s 40ms) — worth weighing, since a 40ms
+margin leaves little room for run-to-run variance or slower conditions on the evaluators' machine.
+`gemma4:e4b` remains the single best quality result across all rounds (83%/7.3) if latency weren't
+binding, which is worth keeping in mind as a cloud-fallback-equivalent option (same model family,
+just too slow locally on this GPU) rather than discarding entirely.
+
+**Next step (per Felix's plan):** pick the current best candidate and try to improve its accuracy
+through prompt refinement (few-shot examples, trimmed acoustic guidance, explicit low temperature),
+then re-test the improved prompt across all relevant models to see if the ranking changes.

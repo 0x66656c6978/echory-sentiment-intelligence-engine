@@ -154,3 +154,23 @@ the picture Round 1 suggested — Groq-as-default is no longer clearly the only 
 deserves serious consideration as the primary local model. Full writeup in
 `docs/benchmark-results.md`. Not yet decided: whether to run a consolidated 8-model comparison
 before finalizing, or proceed with `phi4-mini` directly — surfaced for Felix.
+
+### 2026-09-03 — Round 3: gemma4:e2b and granite4.1:3b both beat phi4-mini
+Felix asked to discard all thinking models entirely and researched further non-reasoning
+candidates first. Found and pulled `gemma4:e2b`/`gemma4:e4b` (Google's edge-optimized Gemma 4,
+April 2026 — confirmed these specifically don't emit thinking tags even when disabled, unlike the
+larger `12b`/`26b` already ruled out), `ministral-3:8b`, and `granite4.1:3b` (both explicitly built
+for structured JSON output). One pull run hit a transient disk-space error on the actual Ollama
+storage drive (`G:`, not `C:` — the earlier `C:` free-space check was checking the wrong drive);
+Felix fixed it externally, retried sequentially, all four pulled successfully. Spot-checked all
+four clean (no `reasoning` field) before running the full suite.
+
+Results: `gemma4:e2b` 78% accuracy / 460ms (40ms margin under 500ms), `gemma4:e4b` 83% / 779ms
+(best quality overall, misses latency), `ministral-3:8b` 72% / 757ms (misses latency),
+`granite4.1:3b` 72% / 363ms (137ms margin). Both `gemma4:e2b` and `granite4.1:3b` now beat
+`phi4-mini` (61%/392ms) on quality while staying latency-compliant. `granite4.1:3b` has the more
+comfortable safety margin; `gemma4:e2b` has better raw accuracy but a tight 40ms buffer. Full
+updated leaderboard across all three rounds in `docs/benchmark-results.md`.
+
+Next: per Felix's plan, pick the current best candidate and try to improve its accuracy via prompt
+refinement, then re-test the improved prompt across all relevant models.

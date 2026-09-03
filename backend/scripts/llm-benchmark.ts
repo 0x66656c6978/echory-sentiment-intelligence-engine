@@ -52,11 +52,11 @@ function loadDotEnv(path: string): void {
 loadDotEnv(join(process.cwd(), ".env"));
 
 const OLLAMA_NATIVE_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-// Round 2: newly-researched non-reasoning candidates only (per Felix's
-// direction) -- llama3.2:1b/qwen3.5:4b/qwen3:8b/qwen3.5:9b already benchmarked,
-// see docs/benchmark-results.md's Round 1 section. Re-run with everyone
-// together only once this round narrows things down further.
-const CANDIDATE_MODELS = ["phi4-mini", "mistral", "qwen2.5:1.5b", "llama3.2:3b"];
+// Round 3: further non-reasoning candidates, confirmed via spot-check to
+// never emit a `reasoning` field (unlike gemma4:12b/26b, which do). See
+// docs/benchmark-results.md for Round 1 (thinking models, now discarded) and
+// Round 2 (phi4-mini/mistral/qwen2.5:1.5b/llama3.2:3b).
+const CANDIDATE_MODELS = ["gemma4:e2b", "gemma4:e4b", "ministral-3:8b", "granite4.1:3b"];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
@@ -325,7 +325,7 @@ async function main() {
     })),
   );
 
-  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-round2.json");
+  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-round3.json");
   writeFileSync(outPath, JSON.stringify({ summaries, allResults }, null, 2), "utf-8");
   console.log(`\nRaw results written to ${outPath}`);
 }
