@@ -52,11 +52,13 @@ function loadDotEnv(path: string): void {
 loadDotEnv(join(process.cwd(), ".env"));
 
 const OLLAMA_NATIVE_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-// Prompt-improvement pass (v2 prompt): targeting granite4.1:3b specifically
-// per Felix's choice (best latency safety margin among Round 3 winners).
-// See docs/benchmark-results.md for Rounds 1-3 and sentimentClassification.ts's
-// v2 comment for exactly which failure modes this prompt revision targets.
-const CANDIDATE_MODELS = ["granite4.1:3b"];
+// Prompt v2 re-test across all other latency-compliant models (granite4.1:3b
+// already re-tested with v2 separately -- see docs/benchmark-results.md).
+// Latency-failing models (qwen3.5:4b/8b/9b thinking family, gemma4:e4b,
+// mistral, ministral-3:8b) are discarded per Felix's direction -- no point
+// re-testing a prompt change on models that already fail the hard 500ms line
+// regardless of quality.
+const CANDIDATE_MODELS = ["gemma4:e2b", "phi4-mini", "llama3.2:3b", "qwen2.5:1.5b", "llama3.2:1b"];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
@@ -329,7 +331,7 @@ async function main() {
     })),
   );
 
-  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-prompt-v2-granite.json");
+  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-prompt-v2-others.json");
   writeFileSync(outPath, JSON.stringify({ summaries, allResults }, null, 2), "utf-8");
   console.log(`\nRaw results written to ${outPath}`);
 }

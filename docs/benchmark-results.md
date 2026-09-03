@@ -179,5 +179,34 @@ than either model had alone before this iteration.
 
 Raw data: `docs/benchmark-raw-results-prompt-v2-granite.json`.
 
-**Next step (per Felix's plan):** test the v2 prompt across all relevant models to see if the
-ranking changes — not yet done.
+## Prompt v2 across all other latency-compliant models
+
+Per Felix's direction, discarded the latency-failing models entirely (no point re-testing a prompt
+change against models that already fail the hard 500ms line regardless of quality) and re-ran v2
+against the remaining five: `gemma4:e2b`, `phi4-mini`, `llama3.2:3b`, `qwen2.5:1.5b`,
+`llama3.2:1b`.
+
+| Model | v1 accuracy | v2 accuracy | v2 risk acc | v2 judge | v2 latency | Margin to 500ms |
+|---|---|---|---|---|---|---|
+| `gemma4:e2b` | 78% | **89%** | 33% | 7.1 | 483ms | **17ms — very tight** |
+| `phi4-mini` | 61% | 78% | **78%** (best) | 6.2 | 405ms | 95ms |
+| `granite4.1:3b` | 72% | 78% | 50% | 6.9 | 396ms | 104ms |
+| `llama3.2:3b` | 56% | 72% | 33% | 6.2 | 367ms | 133ms |
+| `qwen2.5:1.5b` | 39% | 56% | 28% | 3.7 | 362ms | 138ms |
+| `llama3.2:1b` | 22% | 39% | 28% | 2.4 | 237ms | 263ms |
+
+Raw data: `docs/benchmark-raw-results-prompt-v2-others.json`.
+
+**Every model improved substantially** — confirms the v2 prompt's fixes generalize rather than
+being overfit to `granite4.1:3b`'s specific failures (the point of using fresh worked examples
+instead of the benchmark cases themselves).
+
+**New risk worth flagging directly: `gemma4:e2b`'s latency margin has shrunk to 17ms.** The v2
+prompt is longer (added rules + worked examples), and that alone pushed `gemma4:e2b`'s latency
+from 460ms (v1) to 483ms (v2) — its margin nearly halved from an already-tight 40ms. It's now the
+single best-accuracy option (89%) but sits dangerously close to the hard failure line; any further
+prompt growth, or ordinary run-to-run/hardware variance on the evaluators' machine, could push it
+over. `phi4-mini` and `granite4.1:3b` both landed at 78% accuracy with much more comfortable
+margins (95ms and 104ms) — `phi4-mini` additionally has the best risk-level accuracy of any model
+tested (78%, well above everyone else). This is now a genuine three-way tradeoff rather than a
+clear winner, flagged for Felix's decision rather than picked here.

@@ -195,3 +195,18 @@ previous accuracy leader (`gemma4:e2b`, 78%) while keeping a much safer latency 
 40ms) — full writeup in `docs/benchmark-results.md`.
 
 Next: test v2 across all relevant models per Felix's plan — not yet done.
+
+### 2026-09-03 — Prompt v2 tested across all other latency-compliant models
+Felix: discard the latency-failing models, run v2 against the rest. Tested `gemma4:e2b`,
+`phi4-mini`, `llama3.2:3b`, `qwen2.5:1.5b`, `llama3.2:1b`. Every model improved substantially
+(e.g. `gemma4:e2b` 78%→89%, `phi4-mini` 61%→78%, `llama3.2:1b` 22%→39%) — confirms the v2 fixes
+generalize rather than being overfit to `granite4.1:3b`'s specific failures.
+
+New risk found: `gemma4:e2b`'s latency margin shrank from 40ms (v1) to 17ms (v2) — the longer v2
+prompt (added rules + examples) pushed its latency from 460ms to 483ms. It's now the best-accuracy
+option (89%) but dangerously close to the hard 500ms line. `phi4-mini` and `granite4.1:3b` both
+landed at 78% with much safer margins (95ms/104ms); `phi4-mini` additionally has by far the best
+risk-level accuracy (78% vs. everyone else's 28-50%). Full table in `docs/benchmark-results.md`.
+
+This is now a genuine three-way tradeoff (best raw accuracy vs. margin safety vs. risk-level
+accuracy), not a clear single winner — surfaced for Felix rather than decided here.
