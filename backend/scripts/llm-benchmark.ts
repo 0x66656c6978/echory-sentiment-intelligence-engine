@@ -59,11 +59,59 @@ function loadDotEnv(path: string): void {
 loadDotEnv(join(process.cwd(), ".env"));
 
 const OLLAMA_NATIVE_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-// Holdout validation: the three leading candidates from the prompt-v2 pass,
-// re-tested against an independent test set (TEST_SET=holdout) to check
-// whether the accuracy improvement generalizes or was partly overfit to the
-// original 18 cases used to both diagnose and measure it.
-const CANDIDATE_MODELS = ["gemma4:e2b", "phi4-mini", "granite4.1:3b"];
+
+interface Candidate {
+  name: string;
+  call: (systemPrompt: string, userMessage: string) => Promise<{ latencyMs: number; content: string }>;
+  /**
+   * Unconstrained call for the warm-up ping only. Some providers (Groq's
+   * strict json_schema mode, unlike Ollama's more lenient `format`) reject
+   * output outright (400) when a schema-enforced call can't fit an
+   * off-topic warm-up answer into the classification schema -- warm-up must
+   * never carry response_format/schema enforcement.
+   */
+  warmup: (systemPrompt: string, userMessage: string) => Promise<{ latencyMs: number; content: string }>;
+}
+
+function ollamaCandidate(model: string): Candidate {
+  return {
+    name: model,
+    call: (sys, user) => callOllama(model, sys, user, SENTIMENT_CLASSIFICATION_JSON_SCHEMA),
+    warmup: (sys, user) => callOllama(model, sys, user),
+  };
+}
+
+// Ticket 0015: Groq candidate. gpt-oss-20b is the only currently-listed Groq
+// model that's both latency-viable AND supports reasoning_effort -- verified
+// directly: default reasoning produced 441 reasoning tokens and ~980ms;
+// reasoning_effort:"low" cut that to ~52 tokens and ~450ms. The 120b sibling
+// stayed over budget (~775ms) even at reasoning_effort:"low", so it's not
+// included here. llama-3.3-70b-versatile (the model this project's earlier
+// docs assumed) no longer exists in Groq's current catalog -- verified via
+// their /models endpoint, not assumed.
+function groqCandidate(): Candidate {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not set -- add it to backend/.env");
+  return {
+    name: "groq/gpt-oss-20b",
+    call: (sys, user) =>
+      callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, "openai/gpt-oss-20b", sys, user, {
+        temperature: 0.2,
+        reasoning_effort: "low",
+        response_format: { type: "json_schema", json_schema: { name: "classification", schema: SENTIMENT_CLASSIFICATION_JSON_SCHEMA } },
+      }),
+    warmup: (sys, user) =>
+      callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, "openai/gpt-oss-20b", sys, user, {
+        temperature: 0.2,
+        reasoning_effort: "low",
+      }),
+  };
+}
+
+// Ticket 0015: cloud candidates alongside the local ones already selected in
+// ticket 0006, to check whether Groq changes the phi4-mini/granite4.1:3b
+// decision. Gemini Flash skipped per Felix's direction (observed instability).
+const CANDIDATE_MODELS: Candidate[] = [ollamaCandidate("phi4-mini"), ollamaCandidate("granite4.1:3b"), groqCandidate()];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
@@ -118,36 +166,73 @@ async function callOllama(
 }
 
 interface OpenAiCompatChatResponse {
-  choices: { message: { content: string; reasoning_content?: string } }[];
+  choices: { message: { content: string; reasoning_content?: string; reasoning?: string } }[];
 }
 
 /**
- * Calls DeepSeek's OpenAI-compatible endpoint. reasoning_content (the
- * chain-of-thought) is returned as a separate field from content (the final
- * answer) -- unlike the local Ollama "thinking" models, there's no truncation
- * risk here as long as max_tokens leaves room for both. We only read content.
+ * Generic OpenAI-compatible chat call (Groq, DeepSeek, or any other provider
+ * using this wire format). Reasoning-model providers return the chain-of-
+ * thought as a separate field (reasoning_content or reasoning) from the final
+ * answer (content) -- unlike the local Ollama "thinking" models, there's no
+ * truncation risk here as long as max_tokens/reasoning_effort leaves room for
+ * both. We only ever read `content`.
  */
-async function callJudge(systemPrompt: string, userMessage: string): Promise<{ latencyMs: number; content: string }> {
-  const start = Date.now();
-  const res = await fetch(`${JUDGE_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${JUDGE_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: JUDGE_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      max_tokens: 4000, // reasoner needs room for reasoning_content + content
-    }),
-  });
-  const latencyMs = Date.now() - start;
-  if (!res.ok) throw new Error(`Judge (${JUDGE_MODEL}) responded ${res.status}: ${await res.text()}`);
-  const data = (await res.json()) as OpenAiCompatChatResponse;
-  return { latencyMs, content: data.choices[0].message.content };
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Retries on 429 (rate limit) -- expected on Groq's free tier, not a bug.
+ * The retry wait itself is never counted in the reported latencyMs (that
+ * would misrepresent free-tier throttling as model latency) -- the timer
+ * starts fresh on each attempt, only the successful attempt's duration
+ * is reported.
+ */
+async function callOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userMessage: string,
+  extraBody: Record<string, unknown> = {},
+  maxRetries = 5,
+): Promise<{ latencyMs: number; content: string }> {
+  for (let attempt = 0; ; attempt++) {
+    const start = Date.now();
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        max_tokens: 4000, // reasoning providers need room for hidden reasoning + the final content
+        ...extraBody,
+      }),
+    });
+    const latencyMs = Date.now() - start;
+
+    if (res.status === 429 && attempt < maxRetries) {
+      const body = await res.text();
+      const retryAfterHeader = res.headers.get("retry-after");
+      const parsedFromBody = /try again in ([\d.]+)s/i.exec(body)?.[1];
+      const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : parsedFromBody ? Number(parsedFromBody) : 8;
+      console.log(`  (rate limited, waiting ${waitSeconds.toFixed(1)}s before retry ${attempt + 1}/${maxRetries})`);
+      await sleep((waitSeconds + 0.5) * 1000);
+      continue;
+    }
+
+    if (!res.ok) throw new Error(`${model} responded ${res.status}: ${await res.text()}`);
+    const data = (await res.json()) as OpenAiCompatChatResponse;
+    return { latencyMs, content: data.choices[0].message.content };
+  }
+}
+
+function callJudge(systemPrompt: string, userMessage: string): Promise<{ latencyMs: number; content: string }> {
+  return callOpenAICompatible(JUDGE_BASE_URL, JUDGE_API_KEY!, JUDGE_MODEL, systemPrompt, userMessage);
 }
 
 function tryParseJson(raw: string): unknown | undefined {
@@ -180,14 +265,32 @@ interface CaseResult {
   judgeComment: string;
 }
 
-async function runCandidate(model: string, testCase: BenchmarkCase): Promise<CaseResult> {
+async function runCandidate(candidate: Candidate, testCase: BenchmarkCase): Promise<CaseResult> {
   const userMessage = buildSentimentClassificationUserMessage(testCase.chunk);
-  const { latencyMs, content } = await callOllama(
-    model,
-    SENTIMENT_CLASSIFICATION_SYSTEM_PROMPT,
-    userMessage,
-    SENTIMENT_CLASSIFICATION_JSON_SCHEMA,
-  );
+
+  // A hard call failure (e.g. Groq's own generation validation rejecting an
+  // empty completion) is itself a real reliability data point for this
+  // candidate, not something that should crash the whole benchmark run --
+  // recorded the same way as an unparseable response.
+  const callStart = Date.now();
+  let latencyMs: number;
+  let content: string;
+  try {
+    ({ latencyMs, content } = await candidate.call(SENTIMENT_CLASSIFICATION_SYSTEM_PROMPT, userMessage));
+  } catch (err) {
+    return {
+      caseId: testCase.id,
+      model: candidate.name,
+      latencyMs: Date.now() - callStart,
+      parseOk: false,
+      failureReason: `call failed: ${err instanceof Error ? err.message : String(err)}`,
+      sentimentCorrect: null,
+      riskLevelCorrect: null,
+      volatilityCorrect: null,
+      judgeScore: null,
+      judgeComment: "N/A -- call failed",
+    };
+  }
 
   const parsed = tryParseJson(content);
   const validated = parsed ? ClassificationSchema.safeParse(parsed) : undefined;
@@ -199,7 +302,7 @@ async function runCandidate(model: string, testCase: BenchmarkCase): Promise<Cas
         : `schema validation failed: ${validated?.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`;
     return {
       caseId: testCase.id,
-      model,
+      model: candidate.name,
       latencyMs,
       parseOk: false,
       failureReason,
@@ -238,7 +341,7 @@ Score 0-10 how well hidden_intent and mitigation_suggestion capture the true und
 
   return {
     caseId: testCase.id,
-    model,
+    model: candidate.name,
     latencyMs,
     parseOk: true,
     classification,
@@ -293,22 +396,22 @@ function summarize(model: string, results: CaseResult[]): ModelSummary {
 async function main() {
   const allResults: CaseResult[] = [];
 
-  for (const model of CANDIDATE_MODELS) {
-    console.log(`\n=== Benchmarking ${model} ===`);
+  for (const candidate of CANDIDATE_MODELS) {
+    console.log(`\n=== Benchmarking ${candidate.name} ===`);
 
-    // Warm-up call, discarded -- Ollama loads the model into memory on first
-    // use, and that load time (seconds, not ms) would otherwise inflate the
-    // first timed case for every model, skewing the average. Deliberately a
-    // completely unrelated prompt (not the real system prompt or any test
-    // case) so there's no prompt/KV-cache reuse advantage for whichever real
-    // case happens to run first -- every one of the 18 timed calls below is
-    // equally "cold" content-wise, only the model itself is warm.
+    // Warm-up call, discarded -- local models need to load into memory on
+    // first use (seconds, not ms), which would otherwise inflate the first
+    // timed case and skew the average. Harmless no-op cost for cloud
+    // candidates. Deliberately a completely unrelated prompt (not the real
+    // system prompt or any test case) so there's no prompt/KV-cache reuse
+    // advantage for whichever real case happens to run first -- every one of
+    // the timed calls below is equally "cold" content-wise.
     const warmupStart = Date.now();
-    await callOllama(model, "You are a helpful assistant.", "What is the capital of France? Answer in one word.");
+    await candidate.warmup("You are a helpful assistant.", "What is the capital of France? Answer in one word.");
     console.log(`  (warm-up: ${Date.now() - warmupStart}ms, discarded)`);
 
     for (const testCase of BENCHMARK_CASES) {
-      const result = await runCandidate(model, testCase);
+      const result = await runCandidate(candidate, testCase);
       allResults.push(result);
       const label = result.parseOk ? result.classification!.sentiment : `PARSE_FAIL (${result.failureReason})`;
       console.log(
@@ -320,7 +423,7 @@ async function main() {
     }
   }
 
-  const summaries = CANDIDATE_MODELS.map((model) => summarize(model, allResults.filter((r) => r.model === model)));
+  const summaries = CANDIDATE_MODELS.map((candidate) => summarize(candidate.name, allResults.filter((r) => r.model === candidate.name)));
 
   console.log("\n\n=== Summary ===");
   console.table(
@@ -336,7 +439,7 @@ async function main() {
     })),
   );
 
-  const suffix = process.env.TEST_SET === "holdout" ? "holdout" : "prompt-v2-others";
+  const suffix = (process.env.TEST_SET === "holdout" ? "holdout" : "original") + "-cloud-comparison";
   const outPath = join(process.cwd(), "..", "docs", `benchmark-raw-results-${suffix}.json`);
   writeFileSync(outPath, JSON.stringify({ summaries, allResults }, null, 2), "utf-8");
   console.log(`\nRaw results written to ${outPath}`);

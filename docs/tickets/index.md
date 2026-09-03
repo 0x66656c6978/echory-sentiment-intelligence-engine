@@ -35,3 +35,4 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0012-dockerize-backend](finished/0012-dockerize-backend.md) | P1 | finished | Phase 1 |
 | [0013-normalize-error-response-contract](finished/0013-normalize-error-response-contract.md) | P1 | finished | Phase 2 |
 | [0014-standardize-ticket-format](finished/0014-standardize-ticket-format.md) | P1 | finished | N/A |
+| [0015-cloud-model-benchmark](finished/0015-cloud-model-benchmark.md) | P1 | finished | Phase 3 |

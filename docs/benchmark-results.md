@@ -259,6 +259,50 @@ rather than a fluke of the original set. Between `phi4-mini` and `granite4.1:3b`
 close to tied on sentiment accuracy with comfortable latency margins (94ms/107ms); `phi4-mini`'s
 better risk-level accuracy is the more meaningful remaining differentiator.
 
+## Ticket 0015: Groq cloud comparison
+
+Felix added real Groq and Gemini Flash API keys to test cloud models properly rather than assume.
+Gemini Flash skipped (observed instability, not worth the time right now). Groq's model catalog
+had changed since this project's earlier docs assumed `llama-3.3-70b-versatile` — verified via
+Groq's `/models` endpoint that it no longer exists. Current lineup is dominated by reasoning-
+capable models (`openai/gpt-oss-20b/120b`, `qwen/qwen3.6/3.8-27b`) — the same architecture family
+already ruled out locally for latency reasons. Direct testing found Groq exposes a
+`reasoning_effort` parameter: default effort produced 441 reasoning tokens and ~980ms for a single
+call; `reasoning_effort: "low"` cut that to ~52 tokens and ~450ms. `gpt-oss-120b` stayed over
+budget (~775ms) even at low effort, so only `gpt-oss-20b` was benchmarked.
+
+| Model | Original-set accuracy | Holdout accuracy | Holdout risk acc | Original latency | Holdout latency |
+|---|---|---|---|---|---|
+| `phi4-mini` | 83% | 70% | 60% | 395ms | 399ms |
+| `granite4.1:3b` | 78% | 70% | 50% | 396ms | 413ms |
+| `groq/gpt-oss-20b` | 89% | **90%** | 40% | 564ms | 490ms |
+
+Raw data: `docs/benchmark-raw-results-original-cloud-comparison.json`,
+`docs/benchmark-raw-results-holdout-cloud-comparison.json`.
+
+**This is a different situation from `gemma4:e2b`, not the same overfitting pattern.**
+`gpt-oss-20b`'s accuracy *held up* on the holdout (89%→90%, actually slightly higher) — real
+evidence the quality edge is genuine, not test-set fitting. But its latency tells a different
+story than the local models: not uniformly too slow, but **high-variance**. Individual holdout
+calls ranged from 180ms to 754ms — several individual requests exceeded 500ms even though the
+*average* (490ms) technically lands under it, driven by network round-trip and queue time to
+Groq's servers rather than raw model speed (Groq's actual token generation is extremely fast — the
+variance is network/queue, not compute). `phi4-mini` and `granite4.1:3b`, running on local
+hardware with no network hop, stayed tightly clustered in the 300-500ms range across every case in
+both runs, with no comparable spikes. Also hit Groq's free-tier rate limit (8000 TPM) mid-run,
+handled with retry/backoff — a real operational consideration for a production integration, not
+just a benchmark artifact.
+
+Also notable: `gpt-oss-20b`'s risk-level accuracy is the *weakest* of the three on the holdout
+(40% vs. `phi4-mini`'s 60%) despite the best sentiment accuracy — the traffic-light signal doesn't
+automatically benefit from the same quality edge.
+
+**This is a real tradeoff, not a clear "use Groq" or "ignore Groq" answer:** meaningfully better
+and holdout-confirmed sentiment accuracy, against latency that's consistent on average but spikes
+unpredictably above the hard line in a way purely local inference doesn't. Whether that's
+acceptable depends on how "consistently exceeding 500ms" in the challenge's scoring is actually
+interpreted — flagged for Felix's decision, not resolved here.
+
 **Updated recommendation: `phi4-mini` or `granite4.1:3b`, not `gemma4:e2b`.** Between the two,
 `phi4-mini` edges ahead on risk-level accuracy, which matters directly for the traffic-light UI
 signal — a reasonable case for making it the primary choice, though `granite4.1:3b`'s slightly
