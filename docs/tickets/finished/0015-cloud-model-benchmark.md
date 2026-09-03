@@ -99,3 +99,14 @@ Groq — something local inference has zero exposure to. This is NOT the same si
 holdout-confirmed real, and even the average latency is better than the local option. This is a
 genuinely close call, flagged for Felix: `phi4-mini`'s zero measured risk vs. `qwen3.8-27b`'s
 better accuracy and average latency at a real but occasional (not consistent) tail-latency risk.
+
+### 2026-09-03 — Checked whether a shorter prompt would reduce qwen3.8-27b's tail latency
+Felix asked directly. Ran 6 direct calls capturing Groq's latency breakdown (`queue_time`,
+`prompt_time`, `completion_time`) rather than guessing. With the current ~980-token prompt,
+`prompt_time` (prefill -- the component a shorter prompt would actually reduce) was consistently
+~79-82ms, barely varying. `queue_time` varied 18-168ms and network round-trip 39-134ms -- both
+much larger and noisier than prefill, and neither scales with prompt length. Conclusion: shortening
+the prompt would save at most ~30-40ms off prefill and would not address the actual source of the
+14% tail-latency risk (Groq-side queuing and network variance, structural to using a cloud API,
+not fixable via prompt engineering). One-off diagnostic script used and discarded, not committed --
+the finding is what matters, not the throwaway tool.
