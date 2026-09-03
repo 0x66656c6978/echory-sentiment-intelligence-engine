@@ -19,7 +19,7 @@ Echory's Senior Full-Stack Engineer technical assessment (Track A — Full Stack
 npm install
 cp backend/.env.example backend/.env
 npm start            # backend on http://localhost:3000
-npm run dev:frontend # once the frontend exists (ticket 0002)
+npm run dev:frontend # dashboard on http://localhost:5173
 ```
 
 ### Docker (alternative, backend only for now)

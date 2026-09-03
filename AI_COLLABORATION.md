@@ -103,4 +103,4 @@ When we were planning to parallelise working on features, claude suggested to ad
 
 ### Issue management
 
-I should have defined the format for the tickets more initially - having a section with a log for agents and timestamps would have been better from the beginning.
+I should have defined the format for the tickets more initially - having a section with a log for agents and timestamps would have been better from the beginning. The structure was changed on 03.09.2026 at 13:30
