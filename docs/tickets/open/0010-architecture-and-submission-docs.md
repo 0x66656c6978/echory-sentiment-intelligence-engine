@@ -30,6 +30,10 @@ the hardware they were produced on.
   on Felix's dev machine), with a note that pull time varies by network speed
 - ARCHITECTURE.md's latency section includes real measured numbers (from ticket 0008) alongside
   the hardware they were produced on, per Pascal's explicit request
+- ARCHITECTURE.md's known-limitations section documents the accepted Vite dev-server vulnerability
+  from ticket 0002's log (esbuild CORS advisory + Windows `fs.deny` bypass, both dev-server-only)
+  and why it wasn't fixed (Vite 8 needs Node `^20.19.0`/`>=22.12.0`, incompatible with the Node
+  21.4.0 used here, plus a different Rolldown-based plugin peer dependency)
 
 ## Log
 
@@ -38,3 +42,9 @@ Pascal's email confirmed Docker is preferred and explicitly asked for the downlo
 time-to-operational figures and hardware-qualified latency numbers to be in the docs — added both
 as DoD bullets. The download-size numbers are already measured (see ticket 0012's log); this
 ticket just needs to transcribe them into the actual submission docs.
+
+### 2026-09-03 — DoD amended again: Vite vulnerability disclosure
+When asked where the Vite dev-server vulnerability (accepted in ticket 0002's log) was tracked,
+found it was only narrated there — the stated intention to put it in ARCHITECTURE.md's
+known-limitations section had never actually been turned into a DoD bullet here. Added it now so
+it doesn't silently fall through at submission time.
