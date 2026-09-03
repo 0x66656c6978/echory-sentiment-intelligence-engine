@@ -110,3 +110,16 @@ the prompt would save at most ~30-40ms off prefill and would not address the act
 14% tail-latency risk (Groq-side queuing and network variance, structural to using a cloud API,
 not fixable via prompt engineering). One-off diagnostic script used and discarded, not committed --
 the finding is what matters, not the throwaway tool.
+
+### 2026-09-03 — Final decision confirmed: phi4-mini
+Felix: "phi44-mini. We will document why we chose this trade off, backed by numbers. I will be
+able to argue this technical decision and we will hope it won't affect our computed score too
+much." Confirms `phi4-mini` as final, with the tail-latency-risk finding above closing off the
+last open question (a shorter prompt wouldn't have changed the calculus). Updated
+`docs/benchmark-results.md`'s top summary, `backend/.env.example` (including fixing the stale
+`llama-3.3-70b-versatile` reference in the Groq example -- that model no longer exists, verified
+in this same ticket), and `ROADMAP.md` with the full final numbers and reasoning, framed for
+direct reuse when defending this decision. Honest acknowledgment carried through the documentation
+rather than smoothed over: this was a genuinely close call, not an obviously correct one, and the
+0%/14% figures were measured from Felix's own network to Groq -- an evaluator's environment isn't
+guaranteed to match.

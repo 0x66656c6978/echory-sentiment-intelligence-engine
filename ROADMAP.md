@@ -81,11 +81,18 @@ original strategy record.
 
 ## Key decisions locked in this iteration
 
-- **LLM strategy:** `phi4-mini` as the primary local model (`granite4.1:3b` documented swap-in —
-  change `INFERENCE_MODEL` alone), chosen via ticket 0006's benchmark after an independent holdout
-  check ruled out a higher-scoring but overfit alternative (`gemma4:e2b`). GPU confirmed 16GB VRAM
-  via `nvidia-smi`. The inference endpoint stays **always swappable to a real external
-  OpenAI-compatible endpoint** (Groq, Gemini Flash, etc.) via
+- **LLM strategy:** `phi4-mini` as the primary local model, chosen via ticket 0006's benchmark
+  after an independent holdout check ruled out a higher-scoring but overfit alternative
+  (`gemma4:e2b`). Ticket 0015 then benchmarked Groq cloud models for comparison and found
+  `groq/qwen3.8-27b` genuinely beats `phi4-mini` on accuracy (93% vs. 82%) and even average latency
+  (378ms vs. 408ms) — but carries a real 14% chance of exceeding the 500ms line (network/queue
+  variance, not fixable via prompting, verified directly) vs. `phi4-mini`'s measured 0%. Given the
+  challenge scores latency as a pass/fail cliff, kept `phi4-mini` as primary — a close, deliberate
+  call, not an easy one, documented with full numbers in `docs/benchmark-results.md` for defense in
+  the follow-up interview. `granite4.1:3b` (local, safe) and `groq/qwen3.8-27b` (cloud, higher
+  accuracy/latency-risk) are both documented swap-ins — change `INFERENCE_MODEL` alone. GPU
+  confirmed 16GB VRAM via `nvidia-smi`. The inference endpoint stays **always swappable to a real
+  external OpenAI-compatible endpoint** (Groq, Gemini Flash, etc.) via
   `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone —
   this is a hard requirement Pascal explicitly asked for by email, not just a latency safety net,
   and it must keep working with zero code changes. A separate opt-in, `INFERENCE_DISABLE_THINKING`,

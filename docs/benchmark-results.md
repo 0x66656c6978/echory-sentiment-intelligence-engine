@@ -1,15 +1,44 @@
-# Local LLM Quality Benchmark Results (Ticket 0006)
+# LLM Quality & Latency Benchmark Results (Tickets 0006, 0015)
 
 ## Final decision
 
-**Primary: `phi4-mini`. Swap-in alternative: `granite4.1:3b`** (change `INFERENCE_MODEL` alone, no
-code changes). Both are non-reasoning models verified clean on the real production path
-(OpenAI-compatible endpoint with `response_format` JSON-schema enforcement — see ticket 0007's
-log). Chosen over the higher-scoring `gemma4:e2b` after an independent holdout-set check showed
-`gemma4:e2b`'s lead was ~19 points of overfitting to the benchmark's own test set; all three
-converge to 70% accuracy on genuinely unseen cases, at which point `phi4-mini`'s meaningfully
-better risk-level accuracy (70% vs. 50%) and safer latency margin (94ms vs. `gemma4:e2b`'s
-collapsed 5ms) made it the clear pick. Full reasoning below and in ticket 0006's log.
+**Primary model: `phi4-mini` (local, via Ollama). Documented swap-in alternatives:
+`granite4.1:3b` (local, safer latency margin) and `groq/qwen3.8-27b` (cloud, better accuracy —
+deliberately not chosen as primary; see below).** Switching any of these is a one-line
+`INFERENCE_MODEL` change, no code changes (`INFERENCE_BASE_URL`/`INFERENCE_API_KEY` for the cloud
+option) — see `backend/.env.example`.
+
+### The decision in one table
+
+Twelve local models (4 rounds) and three cloud models (Groq) were benchmarked against the same
+18-case set plus an independent 10-case holdout, using the same prompt and judge throughout. Two
+real candidates survived serious consideration once accuracy and latency were both weighed
+properly:
+
+| Model | Sentiment accuracy (28 combined samples) | Risk-level accuracy | Avg latency | **% of calls exceeding 500ms** |
+|---|---|---|---|---|
+| **`phi4-mini` (chosen)** | 82% | 75% | 408ms | **0%** |
+| `groq/qwen3.8-27b` (declined) | 93% | 71% | 378ms (lower!) | **14%** |
+
+`qwen3.8-27b` is not a strawman — it beats `phi4-mini` on accuracy and even on *average* latency,
+and that accuracy edge held up on the independent holdout set (93%→100% on holdout, i.e. not
+overfitting the way an earlier candidate, `gemma4:e2b`, turned out to be — see below). The reason
+it was declined anyway: **`phi4-mini` measured 0% of calls exceeding the 500ms hard limit across
+28 samples; `qwen3.8-27b` measured 14%, from network/queue variance inherent to any cloud API call,
+not something addressable by prompt engineering (verified directly — see ticket 0015's log).**
+
+The challenge brief states latency is a scored dimension (25% weight) and that "consistently
+exceeding 500ms counts as a failure on this dimension" — language that reads as a scoring cliff,
+not a smooth penalty. Weighing that against Nuance Detection Accuracy (30% weight, where
+`phi4-mini` already scores respectably at 75-82%): risking a likely-failed 25%-weighted dimension
+to gain a partial improvement within the 30%-weighted one was judged not worth it, **especially
+since the 0%/14% figures were measured from Felix's own network to Groq — an evaluator's
+environment has no reason to be faster, and no guarantee of being comparable at all.** This is a
+genuine, close trade-off, not a clear-cut either way — documented in full here and in ticket
+0015's log specifically so it can be explained and defended on its merits if asked.
+
+Full phase-by-phase reasoning (four rounds of local benchmarking, the overfitting catch, and the
+cloud comparison) follows below.
 
 **Method:** 18 hand-labeled test cases (`backend/scripts/benchmark-test-set.ts`) deliberately
 targeting sarcasm, deflection, aggression, appeasement, and acoustic/verbal contradiction — not
