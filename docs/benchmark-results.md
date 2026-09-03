@@ -301,7 +301,52 @@ automatically benefit from the same quality edge.
 and holdout-confirmed sentiment accuracy, against latency that's consistent on average but spikes
 unpredictably above the hard line in a way purely local inference doesn't. Whether that's
 acceptable depends on how "consistently exceeding 500ms" in the challenge's scoring is actually
-interpreted — flagged for Felix's decision, not resolved here.
+interpreted.
+
+**Resolution:** computed exact `% of calls over 500ms` across all 28 combined samples (18 original
++ 10 holdout) per model, not just averages — the metric that actually answers "consistently
+exceeding":
+
+| Model | % over 500ms | p50 | p95 | max |
+|---|---|---|---|---|
+| `phi4-mini` | **0%** | 416ms | 473ms | 488ms |
+| `granite4.1:3b` | 7% | 390ms | 518ms | 544ms |
+| `groq/gpt-oss-20b` | **46%** | 482ms | 986ms | 1062ms |
+
+`gpt-oss-20b`'s median (p50: 482ms, right at the line) confirms it fails on close to a coin flip —
+not an occasional spike, a near-50/50 outcome per request. Given the challenge's "consistently
+exceeding 500ms counts as a failure" reads as a scoring cliff rather than a smooth penalty, and a
+25%-weighted dimension likely failing outright isn't worth a partial gain within the 30%-weighted
+accuracy dimension (already respectable at 70-83% locally) — **`gpt-oss-20b` is not recommended.**
+Felix confirmed: stick with `phi4-mini`.
+
+## Additional Groq models checked (per Felix's "anything with better latency for less quality?")
+
+Checked the rest of Groq's current catalog for a middle ground before concluding none exists:
+- `groq/compound-mini` — turned out to be an agentic system that internally routes through
+  **multiple sub-models including `gpt-oss-120b`** (already ruled out) — 1.46s total, worse than
+  `gpt-oss-20b` alone, not a middle ground.
+- `qwen/qwen3.6-27b` — embeds `<think>...</think>` reasoning directly inside `content` (not a
+  separate field like `gpt-oss`/DeepSeek), and took ~4.2s by default with no working
+  `reasoning_effort` lever for this model. Excluded.
+- **`qwen/qwen3.8-27b`** — a real find: doesn't emit reasoning content at all by default (no
+  `reasoning_effort` needed), clean JSON, and turned out to be the strongest candidate overall.
+  Benchmarked properly (both sets, same rigor):
+
+| Model | Sentiment Acc | Risk Acc | Judge | Avg Latency | % over 500ms | p95 | max |
+|---|---|---|---|---|---|---|---|
+| `phi4-mini` | 82% | 75% | 6.6 | 408ms | 0% | 473ms | 488ms |
+| `granite4.1:3b` | 71% | 46% | 6.9 | 400ms | 7% | 518ms | 544ms |
+| `groq/gpt-oss-20b` | 96% | 46% | 8.1 | 519ms | 46% | 986ms | 1062ms |
+| **`groq/qwen3.8-27b`** | **93%** | 71% | 7.6 | **378ms** | 14% | 707ms | 711ms |
+
+`qwen3.8-27b` beats `phi4-mini` on accuracy (93% vs. 82%) and even on *average* latency (378ms vs.
+408ms) — but still carries a real 14% chance of exceeding 500ms on any given request (4 of 28
+calls), driven by network/queue variance to Groq's servers, something purely local inference has
+zero exposure to regardless of the evaluator's own network conditions (unknown, and no reason to
+assume better than this measurement). This is a genuinely closer call than `gpt-oss-20b` was —
+not a clear discard, unlike that one. Flagged for Felix's decision: `phi4-mini`'s zero-risk safety
+vs. `qwen3.8-27b`'s better accuracy/average-latency at a real but occasional tail-latency risk.
 
 **Updated recommendation: `phi4-mini` or `granite4.1:3b`, not `gemma4:e2b`.** Between the two,
 `phi4-mini` edges ahead on risk-level accuracy, which matters directly for the traffic-light UI

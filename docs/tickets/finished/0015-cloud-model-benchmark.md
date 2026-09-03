@@ -72,3 +72,30 @@ sentiment accuracy. Full analysis in `docs/benchmark-results.md`.
 
 This is a genuine tradeoff (better, holdout-confirmed accuracy vs. latency that's inconsistent in
 a way local inference isn't), not a clear verdict either way — flagged for Felix's decision.
+
+### 2026-09-03 — Felix confirmed phi4-mini; computed exact % over 500ms for rigor
+Felix: stay with `phi4-mini`, but wanted the tradeoff made very clear with real numbers rather than
+"average latency." Computed exact `% of calls over 500ms` across all 28 combined samples per
+model: `phi4-mini` 0%, `granite4.1:3b` 7%, `gpt-oss-20b` **46%** (p50 already at 482ms — a near
+coin-flip failure rate, not an occasional spike). This settles it: a 25%-weighted dimension likely
+failing outright isn't worth a partial gain within the 30%-weighted accuracy dimension where local
+models already do reasonably. `gpt-oss-20b` is not recommended.
+
+### 2026-09-03 — Checked for a middle-ground Groq model; found a strong one
+Felix asked whether any other Groq model might offer better latency for slightly lower quality.
+Checked the rest of Groq's catalog before concluding none exists:
+- `groq/compound-mini`: an agentic system routing through multiple sub-models including
+  `gpt-oss-120b` internally — 1.46s total, worse than `gpt-oss-20b` alone.
+- `qwen/qwen3.6-27b`: embeds `<think>` tags directly in `content` (no separate reasoning field),
+  ~4.2s by default, no working `reasoning_effort` lever for this model. Excluded.
+- `qwen/qwen3.8-27b`: doesn't emit reasoning content at all by default — clean JSON, no lever
+  needed. Spot-checked first (467ms, clean output) before spending a full benchmark run on it.
+
+Benchmarked `qwen3.8-27b` properly (both sets). Result across 28 combined samples: **93%
+sentiment accuracy, 71% risk accuracy, 378ms average latency (lower than `phi4-mini`'s 408ms)**,
+but a real 14% chance of exceeding 500ms (4/28 calls, p95 707ms) from network/queue variance to
+Groq — something local inference has zero exposure to. This is NOT the same situation as
+`gpt-oss-20b` (near-coin-flip failure) or `gemma4:e2b` (fake accuracy edge) — the accuracy gain is
+holdout-confirmed real, and even the average latency is better than the local option. This is a
+genuinely close call, flagged for Felix: `phi4-mini`'s zero measured risk vs. `qwen3.8-27b`'s
+better accuracy and average latency at a real but occasional (not consistent) tail-latency risk.

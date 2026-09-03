@@ -81,37 +81,41 @@ function ollamaCandidate(model: string): Candidate {
   };
 }
 
-// Ticket 0015: Groq candidate. gpt-oss-20b is the only currently-listed Groq
-// model that's both latency-viable AND supports reasoning_effort -- verified
-// directly: default reasoning produced 441 reasoning tokens and ~980ms;
-// reasoning_effort:"low" cut that to ~52 tokens and ~450ms. The 120b sibling
-// stayed over budget (~775ms) even at reasoning_effort:"low", so it's not
-// included here. llama-3.3-70b-versatile (the model this project's earlier
-// docs assumed) no longer exists in Groq's current catalog -- verified via
-// their /models endpoint, not assumed.
-function groqCandidate(): Candidate {
+// Ticket 0015: Groq candidates. llama-3.3-70b-versatile (this project's
+// earlier assumed model) no longer exists in Groq's catalog -- verified via
+// their /models endpoint. groq/compound(-mini) turned out to be an agentic
+// system that internally routes through gpt-oss-120b (~1.5s total) -- not a
+// usable candidate, excluded. qwen/qwen3.6-27b embeds <think> tags directly
+// in `content` (not a separate field) and took ~4.2s by default -- excluded.
+function groqCandidate(name: string, model: string, extraBody: Record<string, unknown>): Candidate {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY is not set -- add it to backend/.env");
   return {
-    name: "groq/gpt-oss-20b",
+    name,
     call: (sys, user) =>
-      callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, "openai/gpt-oss-20b", sys, user, {
+      callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, model, sys, user, {
         temperature: 0.2,
-        reasoning_effort: "low",
         response_format: { type: "json_schema", json_schema: { name: "classification", schema: SENTIMENT_CLASSIFICATION_JSON_SCHEMA } },
+        ...extraBody,
       }),
-    warmup: (sys, user) =>
-      callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, "openai/gpt-oss-20b", sys, user, {
-        temperature: 0.2,
-        reasoning_effort: "low",
-      }),
+    warmup: (sys, user) => callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, model, sys, user, { temperature: 0.2, ...extraBody }),
   };
 }
 
 // Ticket 0015: cloud candidates alongside the local ones already selected in
 // ticket 0006, to check whether Groq changes the phi4-mini/granite4.1:3b
 // decision. Gemini Flash skipped per Felix's direction (observed instability).
-const CANDIDATE_MODELS: Candidate[] = [ollamaCandidate("phi4-mini"), ollamaCandidate("granite4.1:3b"), groqCandidate()];
+// gpt-oss-20b needs reasoning_effort:"low" to be latency-viable at all
+// (default reasoning: 441 tokens/~980ms; low: ~52 tokens/~450ms). qwen3.8-27b
+// doesn't expose (or need) a reasoning_effort lever -- it simply doesn't emit
+// reasoning content by default, confirmed via direct spot-check (467ms, clean
+// JSON, no <think>/reasoning field) before spending a full benchmark run on it.
+const CANDIDATE_MODELS: Candidate[] = [
+  ollamaCandidate("phi4-mini"),
+  ollamaCandidate("granite4.1:3b"),
+  groqCandidate("groq/gpt-oss-20b", "openai/gpt-oss-20b", { reasoning_effort: "low" }),
+  groqCandidate("groq/qwen3.8-27b", "qwen/qwen3.8-27b", {}),
+];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
