@@ -1,0 +1,13 @@
+{
+  "name": "negotiation-copilot-reference-backend",
+  "version": "1.0.0",
+  "description": "Track C reference backend — exposes the API contract so candidates can focus on the frontend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
