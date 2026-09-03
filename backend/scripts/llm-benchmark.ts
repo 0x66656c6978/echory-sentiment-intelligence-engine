@@ -280,6 +280,18 @@ async function main() {
 
   for (const model of CANDIDATE_MODELS) {
     console.log(`\n=== Benchmarking ${model} ===`);
+
+    // Warm-up call, discarded -- Ollama loads the model into memory on first
+    // use, and that load time (seconds, not ms) would otherwise inflate the
+    // first timed case for every model, skewing the average. Deliberately a
+    // completely unrelated prompt (not the real system prompt or any test
+    // case) so there's no prompt/KV-cache reuse advantage for whichever real
+    // case happens to run first -- every one of the 18 timed calls below is
+    // equally "cold" content-wise, only the model itself is warm.
+    const warmupStart = Date.now();
+    await callOllama(model, "You are a helpful assistant.", "What is the capital of France? Answer in one word.");
+    console.log(`  (warm-up: ${Date.now() - warmupStart}ms, discarded)`);
+
     for (const testCase of BENCHMARK_CASES) {
       const result = await runCandidate(model, testCase);
       allResults.push(result);

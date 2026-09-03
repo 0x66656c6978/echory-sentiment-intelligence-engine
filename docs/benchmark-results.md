@@ -23,26 +23,35 @@ exact percentages as directional, not statistically precise.
 
 ## Results
 
-| Model | Sentiment accuracy | Risk-level accuracy | Volatility accuracy | Judge score (0-10) | Avg latency | Clears 500ms? |
+**Correction (2026-09-03):** the latency figures below were originally computed by averaging all 18
+calls per model, including each model's very first call — which incurs Ollama's one-time
+model-load-into-memory cost (seconds, not ms) on top of actual inference. That's not representative
+of a warm, already-loaded model in production. Recomputed excluding each model's first call
+(cheap — the raw per-case data was already saved, no need to re-spend judge API budget). No
+pass/fail conclusion changes, but the reported margins were meaningfully overstated, especially for
+`qwen3.5:4b` (1090ms → 662ms). The benchmark script now does an explicit discarded warm-up call
+before timing starts, so this won't recur in future runs.
+
+| Model | Sentiment accuracy | Risk-level accuracy | Volatility accuracy | Judge score (0-10) | Avg latency (warm) | Clears 500ms? |
 |---|---|---|---|---|---|---|
-| `llama3.2:1b` | 22% | 28% | 100% | 3.0 | **313ms** | ✅ Yes |
-| `qwen3.5:4b` | **72%** | 39% | 75% | 5.3 | 1090ms | ❌ No |
-| `qwen3:8b` | 56% | 44% | 100% | 5.6 | 678ms | ❌ No |
-| `qwen3.5:9b` | 67% | 44% | 100% | **6.0** | 977ms | ❌ No |
+| `llama3.2:1b` | 22% | 28% | 100% | 3.0 | **226ms** | ✅ Yes |
+| `qwen3.5:4b` | **72%** | 39% | 75% | 5.3 | 662ms | ❌ No |
+| `qwen3:8b` | 56% | 44% | 100% | 5.6 | 613ms | ❌ No |
+| `qwen3.5:9b` | 67% | 44% | 100% | **6.0** | 917ms | ❌ No |
 
 ## The central finding
 
 **No model satisfies both requirements simultaneously.** The only model that clears the latency
-budget (`llama3.2:1b`, 313ms) has by far the worst classification quality (22% accuracy, lowest
-judge score) — it defaults to "neutral" on more than half the genuinely nuanced cases (sarcasm,
-deflection, aggression all frequently misread as neutral). Every model with real quality
-(`qwen3.5:4b` at 72% — more than 3x `llama3.2:1b`'s accuracy) misses the 500ms hard failure line by
-roughly double or more.
+budget (`llama3.2:1b`, 226ms warm) has by far the worst classification quality (22% accuracy,
+lowest judge score) — it defaults to "neutral" on more than half the genuinely nuanced cases
+(sarcasm, deflection, aggression all frequently misread as neutral). Every model with real quality
+(`qwen3.5:4b` at 72% — more than 3x `llama3.2:1b`'s accuracy) still misses the 500ms hard failure
+line, by roughly 1.2-1.8x depending on the model.
 
 This isn't a close call resolvable by more prompt tuning — the accuracy gap between the fast model
-and the good models is too large (22% vs. 56-72%), and the latency gap between the good models and
-the budget is also too large (roughly 2-4x over) for either side to plausibly move enough to meet
-in the middle within this timeline. Confirms ticket 0005's flagged tension in the sharpest possible
+and the good models is too large (22% vs. 56-72%) for that alone. The latency gap is more moderate
+than first reported (see the correction above) but still real and consistent across every
+quality-competitive model. Confirms ticket 0005's flagged tension in the sharpest possible
 terms, with real numbers now instead of a prediction.
 
 ## Notable per-case findings

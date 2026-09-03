@@ -108,3 +108,31 @@ into the backend's provider interface") is being held for Felix's input rather t
 the data suggests making the cloud endpoint (Groq) the default/primary configuration instead of
 local Ollama, which reverses the roadmap's original local-first assumption. That's a significant
 enough pivot to surface explicitly rather than just doing it.
+
+### 2026-09-03 — Latency numbers corrected: no warm-up call
+Felix: "Are we sure that loading the model into memory doesn't inflate our numbers? I only want to
+test warm models." Checked the raw data — confirmed real: every model's first case in the loop was
+inflated by Ollama's one-time model-load cost (e.g. `qwen3.5:4b`'s first call was 8365ms vs.
+~600-700ms for the rest). Recomputed corrected warm-only averages from the already-saved raw
+per-case data rather than re-spending judge API budget on a needless re-run. No pass/fail
+conclusion changed, but margins were meaningfully overstated (`qwen3.5:4b`: 1090ms reported → 662ms
+actual). Added an explicit discarded warm-up call to the benchmark script before timing starts, so
+this can't recur in the models-still-to-be-tested pass. `docs/benchmark-results.md` updated with
+corrected figures and the correction documented inline.
+
+### 2026-09-03 — Researching additional non-reasoning candidates
+Felix: only benchmark newly-identified models initially, redo the full benchmark later once there's
+a better picture. Researched current (Sept 2026) small models known for good instruction-following
+without hybrid "thinking" mode by default: Phi-4-mini (3.8B, Microsoft), Mistral 7B (known for
+reliable structured/JSON output), the pre-thinking-era Qwen2.5 generation, and Llama 3.2 3B (larger
+sibling of the already-tested 1B, same non-reasoning family). Proceeding to pull and spot-check
+these for thinking-mode behavior before running the full 18-case suite on them alone.
+
+### 2026-09-03 — Warm-up prompt made unrelated to the real prompt
+Felix, immediately after the previous fix: "Your warm up call might cache that prompt for the
+first benchmark. Send a completely unrelated prompt to warm the model up please." Correct —
+the warm-up was reusing the real system prompt + the first test case's exact user message, which
+could let Ollama's prompt/KV-cache reuse make that one specific case measure faster than the other
+17 for reasons unrelated to the model's real performance. Changed the warm-up to a generic,
+unrelated question ("capital of France") so every one of the 18 timed calls is equally cold
+content-wise — only the model itself is warm, not any specific prompt.
