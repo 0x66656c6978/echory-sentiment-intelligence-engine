@@ -31,12 +31,18 @@ on a machine with Docker before the ticket can move to finished.
 http://localhost:3000/health` and a real `POST /api/telemetry/stream` both work as they did
 natively in ticket 0001.
 
-**Update:** Docker isn't installed on Felix's machine either, so nobody in this loop can currently
-run the real verification. Not worth chasing further right now — it's not required by the
-evaluation harness, Pascal hasn't confirmed he even wants it, and the native `npm start` path
-(which is what's actually scored) is unaffected either way. Pausing this ticket; revisit if Docker
-becomes available or Pascal's answer comes back positive. Resuming work on ticket 0002 in the
-meantime.
+**Update:** Docker was installed (via `winget install Docker.DockerDesktop`) and the Docker Desktop
+WSL2 engine confirmed running. Ran the real verification:
+
+```
+docker compose up --build -d
+curl http://localhost:3000/health                        → {"status":"ok",...}
+POST /api/telemetry/stream (realistic sarcastic payload)  → aggressive/critical, matches native run exactly
+POST /api/telemetry/stream (malformed payload)            → 400 with the same field-level Zod errors
+docker compose down                                       → clean teardown
+```
+
+Native `npm start` path re-confirmed unaffected. Unblocked and finished.
 
 ## Definition of done
 
