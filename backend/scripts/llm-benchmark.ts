@@ -33,7 +33,14 @@ import {
   SENTIMENT_CLASSIFICATION_JSON_SCHEMA,
   buildSentimentClassificationUserMessage,
 } from "../src/prompts/sentimentClassification.js";
-import { BENCHMARK_CASES, type BenchmarkCase } from "./benchmark-test-set.js";
+import { BENCHMARK_CASES as ORIGINAL_CASES, type BenchmarkCase } from "./benchmark-test-set.js";
+import { HOLDOUT_CASES } from "./holdout-test-set.js";
+
+// TEST_SET=holdout runs the independent holdout set (holdout-test-set.ts)
+// instead of the original 18 cases -- used to check whether a prompt
+// improvement measured on the original set actually generalizes, since that
+// same set was used to diagnose the failures the improvement targets.
+const BENCHMARK_CASES: BenchmarkCase[] = process.env.TEST_SET === "holdout" ? HOLDOUT_CASES : ORIGINAL_CASES;
 
 // Minimal .env loader (no dotenv dependency needed for one script) -- only
 // sets vars not already present in the environment.
@@ -52,13 +59,11 @@ function loadDotEnv(path: string): void {
 loadDotEnv(join(process.cwd(), ".env"));
 
 const OLLAMA_NATIVE_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-// Prompt v2 re-test across all other latency-compliant models (granite4.1:3b
-// already re-tested with v2 separately -- see docs/benchmark-results.md).
-// Latency-failing models (qwen3.5:4b/8b/9b thinking family, gemma4:e4b,
-// mistral, ministral-3:8b) are discarded per Felix's direction -- no point
-// re-testing a prompt change on models that already fail the hard 500ms line
-// regardless of quality.
-const CANDIDATE_MODELS = ["gemma4:e2b", "phi4-mini", "llama3.2:3b", "qwen2.5:1.5b", "llama3.2:1b"];
+// Holdout validation: the three leading candidates from the prompt-v2 pass,
+// re-tested against an independent test set (TEST_SET=holdout) to check
+// whether the accuracy improvement generalizes or was partly overfit to the
+// original 18 cases used to both diagnose and measure it.
+const CANDIDATE_MODELS = ["gemma4:e2b", "phi4-mini", "granite4.1:3b"];
 
 const JUDGE_BASE_URL = process.env.JUDGE_BASE_URL ?? "https://api.deepseek.com/v1";
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "deepseek-reasoner";
@@ -321,17 +326,18 @@ async function main() {
   console.table(
     summaries.map((s) => ({
       model: s.model,
-      "sentiment acc (of 18)": `${(s.effectiveSentimentAccuracy * 100).toFixed(0)}%`,
+      [`sentiment acc (of ${BENCHMARK_CASES.length})`]: `${(s.effectiveSentimentAccuracy * 100).toFixed(0)}%`,
       "sentiment acc (parsed only)": `${(s.sentimentAccuracyAmongParsed * 100).toFixed(0)}%`,
       "risk acc": `${(s.riskLevelAccuracy * 100).toFixed(0)}%`,
       "volatility acc": s.volatilityAccuracy === null ? "N/A" : `${(s.volatilityAccuracy * 100).toFixed(0)}%`,
       "avg judge score": s.avgJudgeScore.toFixed(1),
       "avg latency": `${s.avgLatencyMs.toFixed(0)}ms`,
-      "parse failures": `${s.parseFailures}/18`,
+      "parse failures": `${s.parseFailures}/${BENCHMARK_CASES.length}`,
     })),
   );
 
-  const outPath = join(process.cwd(), "..", "docs", "benchmark-raw-results-prompt-v2-others.json");
+  const suffix = process.env.TEST_SET === "holdout" ? "holdout" : "prompt-v2-others";
+  const outPath = join(process.cwd(), "..", "docs", `benchmark-raw-results-${suffix}.json`);
   writeFileSync(outPath, JSON.stringify({ summaries, allResults }, null, 2), "utf-8");
   console.log(`\nRaw results written to ${outPath}`);
 }

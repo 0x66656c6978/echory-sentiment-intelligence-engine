@@ -210,3 +210,21 @@ risk-level accuracy (78% vs. everyone else's 28-50%). Full table in `docs/benchm
 
 This is now a genuine three-way tradeoff (best raw accuracy vs. margin safety vs. risk-level
 accuracy), not a clear single winner — surfaced for Felix rather than decided here.
+
+### 2026-09-03 — Holdout validation confirms overfitting concern, changes the recommendation
+Felix asked directly: aren't we just fitting the prompt to our test data? Legitimate concern —
+v2 was designed by looking at failures *on the 18-case set* and measured *on that same set*,
+structurally the same issue as tuning against a validation set. Built an independent 10-case
+holdout set (`backend/scripts/holdout-test-set.ts`, different negotiation contexts/phrasing/
+acoustic values, designed from the base category definitions rather than the v1/v2 failure
+analysis) and re-tested the three leading candidates against it.
+
+Result: all three converge to 70% (from 78-89% on the original set). `gemma4:e2b` drops the most
+(89%→70%, -19 points) — its accuracy lead was substantially inflated by overfitting. `phi4-mini`
+and `granite4.1:3b` drop less (-8 points each) and land at the same 70%. `gemma4:e2b`'s latency
+margin also collapsed to 5ms (from 17ms) on the longer holdout prompt calls — no longer any reason
+to prefer it. `phi4-mini`'s risk-level accuracy advantage (70% vs. 50%) held up on the holdout,
+unlike `gemma4:e2b`'s raw-accuracy edge, suggesting it's a genuine strength, not a fluke.
+
+Updated recommendation: `phi4-mini` or `granite4.1:3b`, not `gemma4:e2b`. Full analysis in
+`docs/benchmark-results.md`. Final choice between the two flagged for Felix.

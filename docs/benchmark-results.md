@@ -210,3 +210,45 @@ over. `phi4-mini` and `granite4.1:3b` both landed at 78% accuracy with much more
 margins (95ms and 104ms) — `phi4-mini` additionally has the best risk-level accuracy of any model
 tested (78%, well above everyone else). This is now a genuine three-way tradeoff rather than a
 clear winner, flagged for Felix's decision rather than picked here.
+
+## Holdout validation: is prompt v2 actually generalizing, or overfitting to the 18 cases?
+
+Felix raised a legitimate methodological concern: the v2 prompt was designed by looking at
+`granite4.1:3b`'s failures *on the original 18-case set*, then measured *on that same set*. That's
+structurally the same issue as tuning against a validation set and reporting the validation score
+as if it were held-out — the 78-89% figures above could partly reflect fitting to this specific,
+small (n=18), self-authored test set rather than genuine improvement at the underlying task.
+
+Built an independent 10-case holdout set (`backend/scripts/holdout-test-set.ts`): different
+negotiation contexts (pricing, timelines, finance sign-off, rather than the original set's
+"partnership" theme), different phrasing, different acoustic value combinations — designed from
+the base category definitions, not reverse-engineered from v1/v2's specific failure analysis.
+Re-ran the three leading candidates (`gemma4:e2b`, `phi4-mini`, `granite4.1:3b`) against it with
+the same v2 prompt.
+
+| Model | Original-set accuracy | Holdout accuracy | Drop | Holdout risk acc | Holdout latency | Margin to 500ms |
+|---|---|---|---|---|---|---|
+| `gemma4:e2b` | 89% | 70% | **-19 points** | 30% | 495ms | **5ms — essentially none** |
+| `phi4-mini` | 78% | 70% | -8 points | **70%** | 406ms | 94ms |
+| `granite4.1:3b` | 78% | 70% | -8 points | 50% | 393ms | 107ms |
+
+Raw data: `docs/benchmark-raw-results-holdout.json`.
+
+**Felix's concern was correct, and it changes the recommendation.** `gemma4:e2b`'s 89% was
+substantially inflated by overfitting to the original set — it drops the most (19 points) once
+tested on cases it had no part in shaping the prompt around. All three models converge to the same
+70% on genuinely unseen cases (with only 10 holdout cases, treat this as directionally tied rather
+than precisely equal), so the accuracy edge that made `gemma4:e2b` attractive **evaporates** — and
+its latency margin, already the worst of the three, has also collapsed to essentially nothing
+(5ms), driven by the same longer v2 prompt. There's no longer any reason to prefer it.
+
+`phi4-mini`'s risk-level accuracy advantage (70% vs. `granite4.1:3b`'s 50%) held up on the holdout
+too, unlike `gemma4:e2b`'s raw-accuracy edge — that looks like a genuine, consistent strength
+rather than a fluke of the original set. Between `phi4-mini` and `granite4.1:3b`, both are now
+close to tied on sentiment accuracy with comfortable latency margins (94ms/107ms); `phi4-mini`'s
+better risk-level accuracy is the more meaningful remaining differentiator.
+
+**Updated recommendation: `phi4-mini` or `granite4.1:3b`, not `gemma4:e2b`.** Between the two,
+`phi4-mini` edges ahead on risk-level accuracy, which matters directly for the traffic-light UI
+signal — a reasonable case for making it the primary choice, though `granite4.1:3b`'s slightly
+larger latency margin is a legitimate counter-argument. Flagged for Felix's final call.
