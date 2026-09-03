@@ -31,6 +31,13 @@ on a machine with Docker before the ticket can move to finished.
 http://localhost:3000/health` and a real `POST /api/telemetry/stream` both work as they did
 natively in ticket 0001.
 
+**Update:** Docker isn't installed on Felix's machine either, so nobody in this loop can currently
+run the real verification. Not worth chasing further right now — it's not required by the
+evaluation harness, Pascal hasn't confirmed he even wants it, and the native `npm start` path
+(which is what's actually scored) is unaffected either way. Pausing this ticket; revisit if Docker
+becomes available or Pascal's answer comes back positive. Resuming work on ticket 0002 in the
+meantime.
+
 ## Definition of done
 
 - `backend/Dockerfile` builds from the monorepo root context (needed because `backend` depends on
