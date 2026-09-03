@@ -19,6 +19,18 @@ inference endpoint to be configurable via base URL + model name — specifically
 point this backend at an external model if their container has problems running local inference
 on their side. A single generic provider is also simpler than two hardcoded ones.
 
+**Conditional complication found in ticket 0005** (see `docs/hardware-probe-results.md`): Ollama's
+OpenAI-compatible endpoint does not support suppressing "thinking" mode on hybrid-reasoning models
+(`think: false` is silently ignored there; only Ollama's native `/api/chat` respects it). Whether
+the "one unified OpenAI-compatible code path" design above still holds **depends entirely on which
+model ticket 0006 picks**:
+- If it's a non-reasoning model (e.g. `llama3.2:1b`, confirmed to behave identically on both
+  endpoints) — the unified design above is unaffected, implement as planned.
+- If it's a "thinking" model (any of the qwen3.x/gemma4.x family) — the local path must call
+  Ollama's native `/api/chat` instead, while the cloud path still uses the OpenAI-compatible
+  endpoint. That's back to two code paths for that case, not fully unified. Decide once 0006's
+  model choice is known, don't guess now.
+
 ## Definition of done
 
 - `InferenceProvider.analyze()` makes a real OpenAI-compatible chat-completions call using
@@ -49,3 +61,8 @@ work — not done yet. Deleted `backend/src/provider/local.ts` and `cloud.ts`, a
 `backend/src/provider/inference.ts`, updated `backend/src/provider/index.ts` and
 `backend/.env.example` accordingly. Re-ran the ticket-0001 regression checks (health check, happy
 path) to confirm the default placeholder path is unaffected — passed.
+
+### 2026-09-03 — Description amended: native-API complication
+Ticket 0005's probe found Ollama's OpenAI-compatible endpoint can't suppress "thinking" mode on
+reasoning models, while the native API can. Added as a conditional note above rather than deciding
+now, since the actual impact depends on which model ticket 0006 selects.

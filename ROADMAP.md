@@ -42,9 +42,15 @@ original strategy record.
 - Frontend smoke test (Playwright) — cut if time-pressured
 
 ### Phase 3 — Local LLM benchmark + prompt design (formerly "speech2text", repurposed — no STT needed)
-- Quick hardware probe (tokens/sec on available GPU) before committing to model sizes
-- Shortlist ~3 local models across the size range (one fast ~3B baseline, one or two ~7-8B quality
-  candidates) rather than an exhaustive sweep
+- Hardware probe done (ticket 0005, `docs/hardware-probe-results.md`): real numbers narrowed the
+  field further than expected. Only `llama3.2:1b` (1B, 174ms avg) clears the 250ms target with
+  headroom; `qwen3.5:4b` (566ms), `qwen3:8b` (1040ms), and `qwen3.5:9b` (1472ms) all miss it. Also
+  found every currently-pulled model defaults to a "thinking" mode that Ollama's OpenAI-compatible
+  endpoint can't suppress (only its native API can) — affects ticket 0007's provider design
+  depending on which model gets chosen.
+- This creates a real tension with Nuance Detection Accuracy (30% weight): benchmark
+  `llama3.2:1b`'s actual quality rather than assuming a 1B model is sufficient just because it's
+  fast, and treat the cloud fallback as a serious primary contender if the quality gap is large
 - Small hand-labeled test set (~15-20 chunks) deliberately targeting sarcasm, deflection, aggression,
   appeasement, and volatility — not just easy positive/negative cases
 - Stronger model (cloud, e.g. Gemini Flash or Groq Llama-70B) as LLM-judge; results stored in-repo
