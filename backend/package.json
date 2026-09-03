@@ -8,7 +8,8 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "probe:hardware": "tsx scripts/hardware-probe.ts"
+    "probe:hardware": "tsx scripts/hardware-probe.ts",
+    "benchmark:llm": "tsx scripts/llm-benchmark.ts"
   },
   "dependencies": {
     "@echory/contract": "*",

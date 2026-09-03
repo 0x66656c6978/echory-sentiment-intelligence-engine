@@ -1,0 +1,1414 @@
+{
+  "summaries": [
+    {
+      "model": "llama3.2:1b",
+      "parseFailures": 0,
+      "effectiveSentimentAccuracy": 0.2222222222222222,
+      "sentimentAccuracyAmongParsed": 0.2222222222222222,
+      "riskLevelAccuracy": 0.2777777777777778,
+      "volatilityAccuracy": 1,
+      "avgJudgeScore": 3,
+      "avgLatencyMs": 313.3888888888889
+    },
+    {
+      "model": "qwen3.5:4b",
+      "parseFailures": 0,
+      "effectiveSentimentAccuracy": 0.7222222222222222,
+      "sentimentAccuracyAmongParsed": 0.7222222222222222,
+      "riskLevelAccuracy": 0.3888888888888889,
+      "volatilityAccuracy": 0.75,
+      "avgJudgeScore": 5.277777777777778,
+      "avgLatencyMs": 1090.3333333333333
+    },
+    {
+      "model": "qwen3:8b",
+      "parseFailures": 0,
+      "effectiveSentimentAccuracy": 0.5555555555555556,
+      "sentimentAccuracyAmongParsed": 0.5555555555555556,
+      "riskLevelAccuracy": 0.4444444444444444,
+      "volatilityAccuracy": 1,
+      "avgJudgeScore": 5.611111111111111,
+      "avgLatencyMs": 677.9444444444445
+    },
+    {
+      "model": "qwen3.5:9b",
+      "parseFailures": 0,
+      "effectiveSentimentAccuracy": 0.6666666666666666,
+      "sentimentAccuracyAmongParsed": 0.6666666666666666,
+      "riskLevelAccuracy": 0.4444444444444444,
+      "volatilityAccuracy": 1,
+      "avgJudgeScore": 6,
+      "avgLatencyMs": 976.7777777777778
+    }
+  ],
+  "allResults": [
+    {
+      "caseId": "clear_positive",
+      "model": "llama3.2:1b",
+      "latencyMs": 1801,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.75,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Acknowledge the deal and move forward with the terms.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "Misreads genuine agreement as appeasement, so both intent and guidance are off-target."
+    },
+    {
+      "caseId": "positive_with_excitement",
+      "model": "llama3.2:1b",
+      "latencyMs": 172,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.8,
+        "volatility_flag": true,
+        "hidden_intent": "deflecting",
+        "mitigation_suggestion": "Continue discussing the details to ensure a solid understanding of the project scope and timeline.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 0,
+      "judgeComment": "The classifier completely inverts the obvious positive excitement into negative deflection, and its mitigation advice is irrelevant to the genuine enthusiasm shown."
+    },
+    {
+      "caseId": "clear_negative",
+      "model": "llama3.2:1b",
+      "latencyMs": 188,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.8,
+        "volatility_flag": true,
+        "hidden_intent": "overcome resistance to terms through aggressive language",
+        "mitigation_suggestion": "Acknowledge their concerns and rephrase the terms to meet their needs",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "Misinterprets the speaker's intent as aggressive persuasion rather than a clear refusal, and the mitigation, though somewhat cooperative, is generic and not grounded in the unambiguous rejection."
+    },
+    {
+      "caseId": "clear_neutral",
+      "model": "llama3.2:1b",
+      "latencyMs": 230,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.8,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Take a moment to review the shipping timeline and provide a written confirmation before proceeding with the contract.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "The hidden_intent of 'appeasement' fabricates a motive absent from the purely informational transcript, and the mitigation suggestion, while practical, is not tailored to any real dynamic."
+    },
+    {
+      "caseId": "neutral_fast_talker",
+      "model": "llama3.2:1b",
+      "latencyMs": 177,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "positive",
+        "confidence": 0.7,
+        "volatility_flag": false,
+        "hidden_intent": "negotiating a delivery schedule",
+        "mitigation_suggestion": "Ask about the Q2 delivery schedule to ensure alignment",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "The hidden_intent and mitigation focus on the topic rather than the ground-truth warning against over-triggering on speech rate, offering no useful guidance for that actual dynamic."
+    },
+    {
+      "caseId": "classic_sarcasm",
+      "model": "llama3.2:1b",
+      "latencyMs": 293,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.8,
+        "volatility_flag": true,
+        "hidden_intent": "deflecting",
+        "mitigation_suggestion": "Please clarify the specifics of what you mean by 'that's worked out SO well for us before'. This will help me better ask",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 3,
+      "judgeComment": "The classifier labels the intent as generic 'deflecting' and misses the central sarcastic mocking dynamic, while the mitigation suggestion is a wooden clarification request that fails to acknowledge the emotional tone or de-escalate the irony."
+    },
+    {
+      "caseId": "sarcasm_masked_as_commitment",
+      "model": "llama3.2:1b",
+      "latencyMs": 212,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.5,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Clarify the legal review timeline to ensure a smooth partnership.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "The classifier mislabels the tactic as appeasement rather than deflection and rates it low risk, so its mitigation only trivially touches the legal delay without addressing the underlying stalling intent."
+    },
+    {
+      "caseId": "deflecting_classic",
+      "model": "llama3.2:1b",
+      "latencyMs": 173,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.5,
+        "volatility_flag": true,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Offer a more specific timeline or a revised answer, rather than making a blanket promise.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Mitigation is directly actionable and well-targeted, but 'appeasement' only partially captures the underlying stalling and reluctance."
+    },
+    {
+      "caseId": "deflecting_subtle",
+      "model": "llama3.2:1b",
+      "latencyMs": 211,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.4,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Clarify the factors to consider, provide more context",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "Appeasement partially captures the non-committal hedged tone, but the mitigation is generic and fails to address the long pause or push for a concrete commitment."
+    },
+    {
+      "caseId": "aggressive_overt",
+      "model": "llama3.2:1b",
+      "latencyMs": 278,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.9,
+        "volatility_flag": true,
+        "hidden_intent": "escalation of the negotiation",
+        "mitigation_suggestion": "Verify the terms of the contract before signing.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 4,
+      "judgeComment": "The hidden_intent vaguely captures escalation but misses the explicit threat/ultimatum nature, and the mitigation suggestion ignores the aggressive pressure tactic by focusing on routine verification rather than addressing the ultimatum directly."
+    },
+    {
+      "caseId": "aggressive_low_patience",
+      "model": "llama3.2:1b",
+      "latencyMs": 355,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.2,
+        "volatility_flag": false,
+        "hidden_intent": "I'm trying to help clarify the point. I want to ensure I've伝",
+        "mitigation_suggestion": "Take a step back and rephrase the question to see if that helps clarify things.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "The hidden intent completely misses the condescending impatience and subtle aggression, and the mitigation suggestion, while constructive, fails to address or counteract the hostile dynamic."
+    },
+    {
+      "caseId": "appeasement_overagree",
+      "model": "llama3.2:1b",
+      "latencyMs": 275,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.8,
+        "volatility_flag": true,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Ask for specific examples of changes that would benefit the candidate and the client.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Hidden intent 'appeasement' accurately matches the one-sided over-accommodation, and the mitigation is proactive but could more directly address the pattern of repeated unilateral concessions."
+    },
+    {
+      "caseId": "appeasement_submissive",
+      "model": "llama3.2:1b",
+      "latencyMs": 241,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.5,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Acknowledge their concerns, and clarify the best course of action.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "The hidden intent 'appeasement' accurately captures the conflict-avoidant submission, but the mitigation suggestion is somewhat generic and lacks specificity for addressing the low-energy submissiveness."
+    },
+    {
+      "caseId": "contradiction_calm_words_loud_acoustic",
+      "model": "llama3.2:1b",
+      "latencyMs": 210,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.7,
+        "volatility_flag": false,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Thank you for considering my suggestion.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 3,
+      "judgeComment": "The 'appeasement' intent cursorily gestures at forced agreement but ignores the barely-contained aggression/sarcasm dynamic, and the platitude mitigation offers no probing or de-escalation guidance, while the low-risk label is implausible."
+    },
+    {
+      "caseId": "contradiction_negative_words_calm_acoustic",
+      "model": "llama3.2:1b",
+      "latencyMs": 219,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.8,
+        "volatility_flag": true,
+        "hidden_intent": "deflecting",
+        "mitigation_suggestion": "Let's review the proposal again and discuss possible compromises.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "Mischaracterizes firm rejection as 'deflecting' and offers a generic compromise suggestion, missing the calm-deliberate dynamic and giving no specific guidance."
+    },
+    {
+      "caseId": "genuine_hesitation",
+      "model": "llama3.2:1b",
+      "latencyMs": 182,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.5,
+        "volatility_flag": false,
+        "hidden_intent": "overcome impatience with explanation",
+        "mitigation_suggestion": "Take a deep breath, slow down, and provide more details.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "The hidden_intent misreads the speaker's honest uncertainty as a manipulative move to overcome impatience, and the mitigation advice to 'provide more details' ignores that the speaker genuinely needs time to think, offering little useful guidance."
+    },
+    {
+      "caseId": "high_volatility_shock",
+      "model": "llama3.2:1b",
+      "latencyMs": 256,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.5,
+        "volatility_flag": true,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Take a moment to reconsider your request.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "Completely misses the shock/distress volatility, mislabels it as appeasement and suggests reconsidering a request rather than de-escalating and addressing the emotional reaction."
+    },
+    {
+      "caseId": "appeasement_masking_frustration",
+      "model": "llama3.2:1b",
+      "latencyMs": 168,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.6,
+        "volatility_flag": true,
+        "hidden_intent": "appeasement",
+        "mitigation_suggestion": "Ask questions to clarify the issue and provide more information before making any decisions.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "The hidden_intent correctly identifies the surface appeasement but misses the sarcastic undertone and underlying frustration, and the generic mitigation advice fails to address the real risk or suggest probing the emotional mismatch."
+    },
+    {
+      "caseId": "clear_positive",
+      "model": "qwen3.5:4b",
+      "latencyMs": 8365,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.82,
+        "volatility_flag": true,
+        "hidden_intent": "masking resignation through forced optimism while pushing a ",
+        "mitigation_suggestion": "Acknowledge the difficulty and ask clarifying questions to uncover concerns.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": false,
+      "judgeScore": 0,
+      "judgeComment": "The classifier invents sarcasm and hidden resignation for a genuinely sincere agreement, making both the intent and mitigation advice completely irrelevant and misleading."
+    },
+    {
+      "caseId": "positive_with_excitement",
+      "model": "qwen3.5:4b",
+      "latencyMs": 731,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Disguised skepticism to deflect from unmet expectations or '",
+        "mitigation_suggestion": "Pause, acknowledge the sentiment but explicitly verify the deal terms before reacting positively.",
+        "risk_level": "critical"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 0,
+      "judgeComment": "The classifier misreads genuine excitement as sarcastic skepticism and its mitigation advice is based on a false premise, completely missing the ground-truth dynamic."
+    },
+    {
+      "caseId": "clear_negative",
+      "model": "qwen3.5:4b",
+      "latencyMs": 582,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Rejecting current proposal to avoid further concession.",
+        "mitigation_suggestion": "Pause before responding; acknowledge their frustration before refocusing on shared goals.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "The intent adds a plausible but unverified motive beyond the direct rejection, and the mitigation, while sensible and actionable, is generic rather than tied to the unambiguous finality of the refusal."
+    },
+    {
+      "caseId": "clear_neutral",
+      "model": "qwen3.5:4b",
+      "latencyMs": 614,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Setting meeting scope or shifting focus",
+        "mitigation_suggestion": "Confirm if this directive implies an upcoming escalation before proceeding.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": true,
+      "judgeScore": 3,
+      "judgeComment": "The intent partly captures task-setting, but the mitigation overreads a purely informational line by suggesting a possible escalation, making it neither accurate nor useful."
+    },
+    {
+      "caseId": "neutral_fast_talker",
+      "model": "qwen3.5:4b",
+      "latencyMs": 687,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.87,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding discussion of previous contentious topic by rushing",
+        "mitigation_suggestion": "Pause briefly and explicitly reference the unresolved point before proceeding to Q3 schedule",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 1,
+      "judgeComment": "The classifier falsely invents a contentious unresolved topic and rushing dynamic from a neutral, businesslike transition, directly contradicting the ground-truth warning about over-triggering on speech rate."
+    },
+    {
+      "caseId": "classic_sarcasm",
+      "model": "qwen3.5:4b",
+      "latencyMs": 631,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Mocking past success to undermine current deal feasibility",
+        "mitigation_suggestion": "Drop the tone and pivot immediately to specific project risks to ground the conversation",
+        "risk_level": "critical"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent astutely captures the ironic mocking of past success, and the mitigation is specific and pragmatic for de-escalating and refocusing on substantive risks."
+    },
+    {
+      "caseId": "sarcasm_masked_as_commitment",
+      "model": "qwen3.5:4b",
+      "latencyMs": 611,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.91,
+        "volatility_flag": true,
+        "hidden_intent": "feigning enthusiasm while delaying substantive agreement",
+        "mitigation_suggestion": "Acknowledge the need for review and ask for a specific deadline rather than waiting.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "Captures the feigned enthusiasm and legal-delay deflection accurately, and the mitigation is specific and actionable, though it could add a contingency for continued stalling."
+    },
+    {
+      "caseId": "deflecting_classic",
+      "model": "qwen3.5:4b",
+      "latencyMs": 626,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Stalling to avoid immediate commitment while buying time",
+        "mitigation_suggestion": "Push back by asking for a specific deadline or partial answer today instead of 'next week'",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "Hidden intent precisely captures the stalling dynamic, and the mitigation directly counters it with concrete, actionable pressure tactics."
+    },
+    {
+      "caseId": "deflecting_subtle",
+      "model": "qwen3.5:4b",
+      "latencyMs": 627,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.94,
+        "volatility_flag": true,
+        "hidden_intent": "Stalling the negotiation and avoiding a concrete decision.",
+        "mitigation_suggestion": "Interrupt immediately with: 'Let's focus on one specific detail; we can discuss the rest later.'",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent accurately captures the stalling/avoidance, and the mitigation is specific and actionable, though it slightly under-emphasizes the observed pause."
+    },
+    {
+      "caseId": "aggressive_overt",
+      "model": "qwen3.5:4b",
+      "latencyMs": 569,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Imminent deadline threat to force immediate compliance",
+        "mitigation_suggestion": "Acknowledge the urgency calmly and ask for specific constraints before confirming.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 8,
+      "judgeComment": "Hidden intent precisely captures the coercive ultimatum, and the mitigation offers actionable, tone-appropriate guidance, though it could more explicitly name the pressure tactic and a defusing counter-offer."
+    },
+    {
+      "caseId": "aggressive_low_patience",
+      "model": "qwen3.5:4b",
+      "latencyMs": 696,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.89,
+        "volatility_flag": true,
+        "hidden_intent": "Pressuring for immediate compliance while masking impatience",
+        "mitigation_suggestion": "Lower your tone and restate the core benefit without repeating 'three times'",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "Hidden intent captures the pressuring impatience but misses the condescending edge; mitigation is specific and actionable, though it could more explicitly address the patronizing tone."
+    },
+    {
+      "caseId": "appeasement_overagree",
+      "model": "qwen3.5:4b",
+      "latencyMs": 643,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.85,
+        "volatility_flag": true,
+        "hidden_intent": "Trying to de-escalate by offering flexibility while sounding",
+        "mitigation_suggestion": "Request concrete examples of specific adjustments before agreeing.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Hidden intent captures appeasement but misses the repeated/one-sided concession pattern; mitigation is practical but doesn't directly address the over-accommodation trend."
+    },
+    {
+      "caseId": "appeasement_submissive",
+      "model": "qwen3.5:4b",
+      "latencyMs": 752,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding commitment by framing agreement as avoidance of 'ca",
+        "mitigation_suggestion": "Ask for a specific next step and decision timeline to prevent stalling.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 3,
+      "judgeComment": "The intent misreads conflict-avoidant submissiveness as commitment-avoidance/stalling, and the mitigation seeks a timeline rather than validating the speaker's concerns or encouraging genuine input."
+    },
+    {
+      "caseId": "contradiction_calm_words_loud_acoustic",
+      "model": "qwen3.5:4b",
+      "latencyMs": 688,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Masking resistance with forced agreement to de-escalate",
+        "mitigation_suggestion": "Pause before responding and ask clarifying questions about the specific terms before committing verbally.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Captures the forced-agreement dynamic and gives actionable advice, but overlooks the equally defensible barely-contained-aggression reading, making it somewhat narrow."
+    },
+    {
+      "caseId": "contradiction_negative_words_calm_acoustic",
+      "model": "qwen3.5:4b",
+      "latencyMs": 819,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.88,
+        "volatility_flag": true,
+        "hidden_intent": "Rejecting the offer while signaling readiness to explore a '",
+        "mitigation_suggestion": "Pause and acknowledge their concerns before pivoting to collaborative problem solving.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "Hidden intent is truncated and wrongly frames a firm, calm rejection as openness, while the mitigation suggestion ignores the core risk of misreading calm delivery as low-risk agreement."
+    },
+    {
+      "caseId": "genuine_hesitation",
+      "model": "qwen3.5:4b",
+      "latencyMs": 624,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.85,
+        "volatility_flag": true,
+        "hidden_intent": "Buying time while calculating counter-offer",
+        "mitigation_suggestion": "Avoid pressure; state the specific constraint you're evaluating against to reduce perceived uncertainty.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden_intent captures the legitimate time-buying dynamic while the mitigation suggestion offers specific, actionable transparency guidance that directly addresses the perceived uncertainty."
+    },
+    {
+      "caseId": "high_volatility_shock",
+      "model": "qwen3.5:4b",
+      "latencyMs": 643,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.87,
+        "volatility_flag": true,
+        "hidden_intent": "Pressuring for immediate concession or threatening walkout",
+        "mitigation_suggestion": "Acknowledge the urgency calmly and pause before responding to de-escalate tension.",
+        "risk_level": "critical"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": true,
+      "judgeScore": 2,
+      "judgeComment": "The hidden_intent mischaracterizes a shock/distress reaction as an aggressive pressuring tactic, and while the suggestion to pause is mildly useful, it fails to address the core dynamic of responding to unexpected news."
+    },
+    {
+      "caseId": "appeasement_masking_frustration",
+      "model": "qwen3.5:4b",
+      "latencyMs": 718,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Avoiding commitment and stalling the negotiation process",
+        "mitigation_suggestion": "Stop with 'we'll figure it out' and ask a direct follow-up question to force specific disclosure.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "It misreads the speaker's concealed frustration and surface placation as strategic stalling, so although the follow-up question could help, it misses the real emotional undercurrent."
+    },
+    {
+      "caseId": "clear_positive",
+      "model": "qwen3:8b",
+      "latencyMs": 1780,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "confirming terms without commitment",
+        "mitigation_suggestion": "request clarification on next steps",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "Both the hidden_intent (denying commitment) and mitigation_suggestion (asking for unnecessary clarification) directly contradict the ground truth of unambiguous genuine agreement."
+    },
+    {
+      "caseId": "positive_with_excitement",
+      "model": "qwen3:8b",
+      "latencyMs": 932,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.85,
+        "volatility_flag": true,
+        "hidden_intent": "masking hesitation",
+        "mitigation_suggestion": "Probe for specific details or concerns",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 1,
+      "judgeComment": "The classifier misreads genuine, matching excitement as deflection and hesitation, and its mitigation suggestion is inapplicable to the actual dynamic."
+    },
+    {
+      "caseId": "clear_negative",
+      "model": "qwen3:8b",
+      "latencyMs": 675,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "expressing strong disagreement",
+        "mitigation_suggestion": "Acknowledge the concern and propose alternative terms",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "The hidden_intent closely captures the direct rejection, and the mitigation offers practical next steps, though it slightly softens the unambiguous nature of the refusal."
+    },
+    {
+      "caseId": "clear_neutral",
+      "model": "qwen3:8b",
+      "latencyMs": 732,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "neutral focus on logistics",
+        "mitigation_suggestion": "Confirm understanding of timeline details",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": true,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent accurately captures the neutral, logístical focus, and the mitigation suggestion is specific and actionable, though slightly more proactive than needed for a purely informational statement."
+    },
+    {
+      "caseId": "neutral_fast_talker",
+      "model": "qwen3:8b",
+      "latencyMs": 535,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Neutral transition to next topic",
+        "mitigation_suggestion": "Confirm understanding of delivery schedule",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 6,
+      "judgeComment": "Correctly identifies neutral intent and low risk, but the mitigation is generic and does not capture the specific insight that fast-paced speech alone should not be treated as volatility."
+    },
+    {
+      "caseId": "classic_sarcasm",
+      "model": "qwen3:8b",
+      "latencyMs": 619,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "expressing doubt",
+        "mitigation_suggestion": "ask for specific examples of past success",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 6,
+      "judgeComment": "Captures the underlying doubt but misses the mocking/emotional volatility, and the mitigation is only moderately targeted at the interpersonal tone."
+    },
+    {
+      "caseId": "sarcasm_masked_as_commitment",
+      "model": "qwen3:8b",
+      "latencyMs": 513,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Avoiding direct commitment",
+        "mitigation_suggestion": "Probe about legal review timeline",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "The hidden intent and mitigation are directionally correct and actionable, though slightly less precise than naming legal delay as the deflection mechanism and underrating the risk."
+    },
+    {
+      "caseId": "deflecting_classic",
+      "model": "qwen3:8b",
+      "latencyMs": 607,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Avoid direct commitment",
+        "mitigation_suggestion": "Push for a specific deadline or follow-up",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent accurately identifies the stalling dynamic as commitment avoidance, and the mitigation to push for a specific deadline directly counters the indefinite postponement with actionable guidance."
+    },
+    {
+      "caseId": "deflecting_subtle",
+      "model": "qwen3:8b",
+      "latencyMs": 509,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding commitment",
+        "mitigation_suggestion": "Ask for specific factors to clarify",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent accurately identifies the evasive non-commitment, and the mitigation suggestion is specific and directly actionable for a negotiator, though it misses the subtle cue of the long pause."
+    },
+    {
+      "caseId": "aggressive_overt",
+      "model": "qwen3:8b",
+      "latencyMs": 522,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.95,
+        "volatility_flag": true,
+        "hidden_intent": "pressure for immediate decision",
+        "mitigation_suggestion": "acknowledge urgency and propose a compromise timeline",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 9,
+      "judgeComment": "The hidden_intent accurately identifies the pressure-for-immediate-decision dynamic of the ultimatum, and the mitigation suggestion offers a concrete, actionable way to defuse it while acknowledging urgency."
+    },
+    {
+      "caseId": "aggressive_low_patience",
+      "model": "qwen3:8b",
+      "latencyMs": 538,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.95,
+        "volatility_flag": true,
+        "hidden_intent": "frustration and control",
+        "mitigation_suggestion": "Acknowledge their frustration and offer to clarify further",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Captures the frustration and controlling tone but underplays the condescension and subtle aggression, though the mitigation advice is practical."
+    },
+    {
+      "caseId": "appeasement_overagree",
+      "model": "qwen3:8b",
+      "latencyMs": 580,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding commitment",
+        "mitigation_suggestion": "Ask for specific terms or conditions",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "It captures vague deflecting and prompts for specifics, but misses the core dynamic of repeated one-sided concessions."
+    },
+    {
+      "caseId": "appeasement_submissive",
+      "model": "qwen3:8b",
+      "latencyMs": 643,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding commitment",
+        "mitigation_suggestion": "Ask for specific terms to clarify position",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "The hidden_intent misidentifies the behavior as avoiding commitment when the speaker is actually committing submissively to avoid conflict, and while asking for specific terms is a useful probing technique, it misses the need to address the underlying conflict-avoidance dynamic."
+    },
+    {
+      "caseId": "contradiction_calm_words_loud_acoustic",
+      "model": "qwen3:8b",
+      "latencyMs": 605,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.85,
+        "volatility_flag": true,
+        "hidden_intent": "avoiding commitment",
+        "mitigation_suggestion": "probe for specific terms",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 5,
+      "judgeComment": "The classifier correctly avoids a plain positive reading but collapses the genuine sarcasm/aggression ambiguity into a narrow 'deflecting/avoiding commitment' frame, yielding only mildly useful probing advice that misses the volatile emotional subtext."
+    },
+    {
+      "caseId": "contradiction_negative_words_calm_acoustic",
+      "model": "qwen3:8b",
+      "latencyMs": 543,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Expressing dissatisfaction",
+        "mitigation_suggestion": "Ask for specific concerns and offer to adjust",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "Identifies negative sentiment but mislabels it as mere dissatisfaction, missing the firm rejection and calm-delivery trap, while the generic mitigation advice doesn't address the core risk."
+    },
+    {
+      "caseId": "genuine_hesitation",
+      "model": "qwen3:8b",
+      "latencyMs": 720,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Avoiding commitment",
+        "mitigation_suggestion": "Ask for specific details to uncover true stance",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 5,
+      "judgeComment": "The hidden intent overstates avoidance when the ground truth weighs toward genuine need for time, though the mitigation to probe specifics is a defensible but generic response to the ambiguity."
+    },
+    {
+      "caseId": "high_volatility_shock",
+      "model": "qwen3:8b",
+      "latencyMs": 578,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Avoiding commitment",
+        "mitigation_suggestion": "Ask for clarification on the issue",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 3,
+      "judgeComment": "The hidden intent misreads acute shock and volatility as deliberate deflecting, and while asking for clarification is reasonable, it overlooks the need to de-escalate and address the emotional distress first."
+    },
+    {
+      "caseId": "appeasement_masking_frustration",
+      "model": "qwen3:8b",
+      "latencyMs": 572,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Avoiding responsibility",
+        "mitigation_suggestion": "Ask for specific next steps",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 3,
+      "judgeComment": "The hidden intent misses the core frustration/placation dynamic, and while asking for next steps is mildly practical, it doesn't address the emotional undercurrent or probe the real concern."
+    },
+    {
+      "caseId": "clear_positive",
+      "model": "qwen3.5:9b",
+      "latencyMs": 1996,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.72,
+        "volatility_flag": false,
+        "hidden_intent": "Hasty closure to avoid further negotiation pressure or admit",
+        "mitigation_suggestion": "Slow down speech rate; ask for specific clarifications on terms before agreeing.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "The classifier invents appeasement and hasty-avoidance dynamics that contradict the ground-truth unambiguous genuine agreement, so its guidance is misguided and unnecessary."
+    },
+    {
+      "caseId": "positive_with_excitement",
+      "model": "qwen3.5:9b",
+      "latencyMs": 955,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Masking frustration or disbelief with forced enthusiasm due.",
+        "mitigation_suggestion": "Pause and ask clarifying questions to ground the conversation in reality before proceeding.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 0,
+      "judgeComment": "The classifier misreads genuine excitement as sarcasm, so both the hidden intent and mitigation advise against the actual dynamic."
+    },
+    {
+      "caseId": "clear_negative",
+      "model": "qwen3.5:9b",
+      "latencyMs": 1026,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.95,
+        "volatility_flag": false,
+        "hidden_intent": "Rejecting proposal to protect bottom line or escalate walk-.",
+        "mitigation_suggestion": "Pause and ask: 'Specifically which terms are unacceptable?'",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "The hidden intent correctly identifies the rejection and plausible motivators, and the mitigation suggestion is specific and actionable for unpacking the disagreement."
+    },
+    {
+      "caseId": "clear_neutral",
+      "model": "qwen3.5:9b",
+      "latencyMs": 1026,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "Rushing through specific details to stall or avoid deeper Q&",
+        "mitigation_suggestion": "Slow the pace down by asking clarifying questions about section 4 before proceeding.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 1,
+      "judgeComment": "The classifier invents a deflecting/stalling motive where the ground truth states the statement was purely informational, so the hidden intent and mitigation are not aligned with the true dynamic."
+    },
+    {
+      "caseId": "neutral_fast_talker",
+      "model": "qwen3.5:9b",
+      "latencyMs": 881,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "transitioning to logistics discussion while rushing.",
+        "mitigation_suggestion": "Ask specific questions about Q3 delivery constraints or confirm the previous item's status before proceeding.",
+        "risk_level": "low"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 2,
+      "judgeComment": "It correctly notes the topic transition but mislabels natural quick businesslike speech as rushing, repeating the over-triggering the ground truth warns against, and the mitigation is generic rather than calibrated to that correction."
+    },
+    {
+      "caseId": "classic_sarcasm",
+      "model": "qwen3.5:9b",
+      "latencyMs": 968,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "sarcastic",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Expressing strong disagreement and rejecting the proposal.",
+        "mitigation_suggestion": "Pause, acknowledge their frustration, and ask an open-ended question to address their concerns before re-proposing.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "The hidden intent correctly identifies the rejection and disagreement behind the sarcasm, and the mitigation offers practical de-escalation guidance, though it doesn't explicitly address the mocking/ironic tone."
+    },
+    {
+      "caseId": "sarcasm_masked_as_commitment",
+      "model": "qwen3.5:9b",
+      "latencyMs": 932,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.88,
+        "volatility_flag": true,
+        "hidden_intent": "Expressing agreement while using speed and hesitation to buy",
+        "mitigation_suggestion": "Slow the pace and directly address their legal team's specific constraints.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "It notes the surface-level appeasement and mentions legal specifics, but misreads the tactic as need for pace control rather than recognizing the legal review as a deliberate deflection/delay mechanism."
+    },
+    {
+      "caseId": "deflecting_classic",
+      "model": "qwen3.5:9b",
+      "latencyMs": 868,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "stalling for time to avoid immediate commitment",
+        "mitigation_suggestion": "Press for a specific date or ask the decision-maker directly rather than their team.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden_intent accurately identifies stalling to avoid commitment, and the mitigation is concrete and actionable, though it could also address the indefinite postponement aspect."
+    },
+    {
+      "caseId": "deflecting_subtle",
+      "model": "qwen3.5:9b",
+      "latencyMs": 901,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "stalling to avoid committing to terms or timeline",
+        "mitigation_suggestion": "Press for specific deadlines: 'Let's define exactly what those factors are and decide by tomorrow.'",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 10,
+      "judgeComment": "Hidden intent precisely identifies the stalling/avoidance dynamic, and the mitigation suggestion directly counters it with a concrete, actionable deadline-focused next step."
+    },
+    {
+      "caseId": "aggressive_overt",
+      "model": "qwen3.5:9b",
+      "latencyMs": 905,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.95,
+        "volatility_flag": true,
+        "hidden_intent": "Apply pressure to force immediate compliance via deadline.",
+        "mitigation_suggestion": "De-escalate by acknowledging the pressure but requesting a brief pause before signing.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 9,
+      "judgeComment": "Hidden intent accurately identifies the deadline ultimatum as pressure for immediate compliance, and the mitigation provides a specific, actionable de-escalation tactic, though it could additionally recommend naming the tactic to counter it more directly."
+    },
+    {
+      "caseId": "aggressive_low_patience",
+      "model": "qwen3.5:9b",
+      "latencyMs": 998,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "aggressive",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Applying pressure to force compliance through frustration.",
+        "mitigation_suggestion": "Pause and ask a clarifying question like 'What specific point feels unclear?' to de-escalate.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 7,
+      "judgeComment": "Hidden intent captures the frustration pressure but misses the condescending superior tone; mitigation is actionable though generic and not tailored to repairing the implied insult."
+    },
+    {
+      "caseId": "appeasement_overagree",
+      "model": "qwen3.5:9b",
+      "latencyMs": 793,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "Submissive compliance to preserve deal; lacks negotiation.",
+        "mitigation_suggestion": "Pause and ask specific follow-up questions to verify commitment.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "The hidden_intent accurately captures the submissive one-sided concession pattern, and the mitigation suggestion is reasonably useful though it could more directly prompt addressing the repeated over-accommodation and testing reciprocity."
+    },
+    {
+      "caseId": "appeasement_submissive",
+      "model": "qwen3.5:9b",
+      "latencyMs": 888,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "avoiding conflict and conceding control to preserve the deal",
+        "mitigation_suggestion": "Pause before agreeing; ask one final clarifying question about their constraints.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 8,
+      "judgeComment": "Hidden intent accurately captures the conflict-avoidant concession, though mitigation could more directly address the submissive energy by empowering the speaker."
+    },
+    {
+      "caseId": "contradiction_calm_words_loud_acoustic",
+      "model": "qwen3.5:9b",
+      "latencyMs": 899,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Rushing agreement while displaying signs of hidden stress or",
+        "mitigation_suggestion": "Slow the conversation down and ask a clarifying question to gauge genuine agreement.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": true,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden_intent captures the fast, stressed delivery and the mitigation is specific and actionable, directly addressing the need to verify genuine agreement in an ambiguous volatile context."
+    },
+    {
+      "caseId": "contradiction_negative_words_calm_acoustic",
+      "model": "qwen3.5:9b",
+      "latencyMs": 935,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "negative",
+        "confidence": 0.92,
+        "volatility_flag": false,
+        "hidden_intent": "Rejecting proposal due to perceived mismatch in fit or value",
+        "mitigation_suggestion": "Ask specific questions about 'how' it doesn't work to uncover the real objection.",
+        "risk_level": "high"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 6,
+      "judgeComment": "Hidden intent correctly identifies rejection, but the mitigation misses the key trap of calm delivery being misread as low-risk, offering only a generic probing tactic rather than guidance on not downgrading the firmness."
+    },
+    {
+      "caseId": "genuine_hesitation",
+      "model": "qwen3.5:9b",
+      "latencyMs": 766,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "neutral",
+        "confidence": 0.85,
+        "volatility_flag": false,
+        "hidden_intent": "Hesitation and stalling for time",
+        "mitigation_suggestion": "Pause briefly then reframe the question to check if they need clarification.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 4,
+      "judgeComment": "It captures the hesitation but wrongly frames it as stalling rather than genuine uncertainty, and the mitigation is generic and doesn't directly handle distinguishing real need for time from deflection."
+    },
+    {
+      "caseId": "high_volatility_shock",
+      "model": "qwen3.5:9b",
+      "latencyMs": 898,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "deflecting",
+        "confidence": 0.88,
+        "volatility_flag": true,
+        "hidden_intent": "Stalling to reconsider or avoid immediate concession.",
+        "mitigation_suggestion": "Pause and ask for specific concerns rather than accepting the delay.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": false,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": true,
+      "judgeScore": 5,
+      "judgeComment": "The stalling interpretation is plausible but misses the acute shock and distress highlighted in the ground truth, and the advice is only generic rather than calibrated to the speaker's volatile emotional state."
+    },
+    {
+      "caseId": "appeasement_masking_frustration",
+      "model": "qwen3.5:9b",
+      "latencyMs": 947,
+      "parseOk": true,
+      "classification": {
+        "sentiment": "appeasement",
+        "confidence": 0.92,
+        "volatility_flag": true,
+        "hidden_intent": "Rushing to dismiss concern to close deal despite anxiety or1",
+        "mitigation_suggestion": "Slow down; ask 'What specifically worries you?' to validate feelings before proceeding.",
+        "risk_level": "medium"
+      },
+      "sentimentCorrect": true,
+      "riskLevelCorrect": false,
+      "volatilityCorrect": null,
+      "judgeScore": 9,
+      "judgeComment": "The hidden intent accurately identifies the dismissal of underlying anxiety, and the mitigation suggestion is specific, actionable, and directly targets validating the real concern beneath the placation."
+    }
+  ]
+}
