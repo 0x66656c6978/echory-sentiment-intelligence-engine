@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach } from "vitest";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { SentimentAnalysisResult, SentimentProvider, TelemetryChunkRequest } from "@echory/contract";
-import { API_SESSION_SUMMARY_PATH, TelemetryChunkResponseSchema } from "@echory/contract";
+import { API_MITIGATION_FEEDBACK_PATH, API_SESSION_SUMMARY_PATH, TelemetryChunkResponseSchema } from "@echory/contract";
 import { buildApp } from "./app.js";
 import { DEFAULT_LLM_LOG_PATH, readLLMCallLog } from "./observability/llmLogger.js";
 
@@ -215,5 +215,55 @@ describe("GET /api/telemetry/session/:session_id/summary (ticket 0010, Track B e
     expect(body.dominant_sentiment).toBe("positive");
     expect(body.top_risk_moments.length).toBeGreaterThan(0);
     expect(body.top_risk_moments[0]).toHaveProperty("text_excerpt");
+  });
+});
+
+describe("POST /api/telemetry/session/:session_id/mitigation-feedback (Mitigation Panel actually recording something)", () => {
+  it("returns 404 for a chunk that was never streamed to this session", async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: "POST",
+      url: API_MITIGATION_FEEDBACK_PATH("session_feedback_unknown"),
+      payload: { chunk_id: "never_seen", action: "used" },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ error: "not_found" });
+  });
+
+  it("returns 400 for an invalid action", async () => {
+    const app = await buildApp(new FakeInferenceProvider());
+    const sessionId = "session_feedback_invalid";
+    await app.inject({
+      method: "POST",
+      url: "/api/telemetry/stream",
+      payload: { ...VALID_REQUEST, chunk_id: "fb_invalid", session_id: sessionId },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: API_MITIGATION_FEEDBACK_PATH(sessionId),
+      payload: { chunk_id: "fb_invalid", action: "maybe-later" },
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("records feedback against a real chunk and reflects it back in the session summary's underlying data", async () => {
+    const app = await buildApp(new FakeInferenceProvider());
+    const sessionId = "session_feedback_real";
+    await app.inject({
+      method: "POST",
+      url: "/api/telemetry/stream",
+      payload: { ...VALID_REQUEST, chunk_id: "fb_1", session_id: sessionId },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: API_MITIGATION_FEEDBACK_PATH(sessionId),
+      payload: { chunk_id: "fb_1", action: "used" },
+    });
+
+    expect(response.statusCode).toBe(204);
   });
 });

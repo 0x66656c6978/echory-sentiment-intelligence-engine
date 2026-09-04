@@ -60,6 +60,16 @@ function StreamCard({ entry, isNewestResolved }: { entry: ChunkEntry; isNewestRe
             {response.volatility_flag && (
               <span className="font-body text-[11px] font-bold uppercase tracking-[0.08em] text-accent-700">volatile</span>
             )}
+            {entry.mitigationFeedback === "used" && (
+              <span className="rounded-full bg-accent2-200 px-[10px] py-[3px] font-body text-[10.5px] font-semibold text-accent2-800">
+                ✓ suggestion used
+              </span>
+            )}
+            {entry.mitigationFeedback === "dismissed" && (
+              <span className="rounded-full bg-neutral-200 px-[10px] py-[3px] font-body text-[10.5px] font-semibold text-neutral-600">
+                suggestion dismissed
+              </span>
+            )}
           </>
         )}
       </div>

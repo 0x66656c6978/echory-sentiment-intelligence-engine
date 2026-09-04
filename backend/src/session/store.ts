@@ -1,9 +1,18 @@
-import type { RiskLevel, RiskMoment, Sentiment, SessionSummaryResponse, TelemetryChunkResponse } from "@echory/contract";
+import type {
+  MitigationFeedbackAction,
+  RiskLevel,
+  RiskMoment,
+  Sentiment,
+  SessionSummaryResponse,
+  TelemetryChunkResponse,
+} from "@echory/contract";
 
 interface StoredChunk extends TelemetryChunkResponse {
   timestamp_ms: number;
   /** Original transcript text for this chunk -- needed for the summary endpoint's text_excerpt, not returned by the per-chunk response itself. */
   text: string;
+  /** Whether the negotiator acted on this chunk's mitigation_suggestion -- unset until the dashboard reports feedback. Not part of the Track B summary contract, dashboard-only. */
+  mitigationFeedback?: MitigationFeedbackAction;
 }
 
 const TEXT_EXCERPT_MAX_LENGTH = 100;
@@ -35,6 +44,19 @@ class SessionStore {
 
   get(sessionId: string): StoredChunk[] | undefined {
     return this.sessions.get(sessionId);
+  }
+
+  /**
+   * Records whether the negotiator acted on a specific chunk's mitigation
+   * suggestion. Returns false (route turns this into 404) when the session
+   * or the chunk within it doesn't exist -- feedback can only ever attach to
+   * a chunk that was actually returned to the client.
+   */
+  recordMitigationFeedback(sessionId: string, chunkId: string, action: MitigationFeedbackAction): boolean {
+    const chunk = this.sessions.get(sessionId)?.find((c) => c.chunk_id === chunkId);
+    if (!chunk) return false;
+    chunk.mitigationFeedback = action;
+    return true;
   }
 
   /**

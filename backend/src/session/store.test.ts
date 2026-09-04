@@ -98,4 +98,38 @@ describe("sessionStore", () => {
       expect(excerpt.endsWith("…")).toBe(true);
     });
   });
+
+  describe("recordMitigationFeedback", () => {
+    it("returns false for a session that doesn't exist", () => {
+      expect(sessionStore.recordMitigationFeedback("session_feedback_missing", "c1", "used")).toBe(false);
+    });
+
+    it("returns false for a chunk_id that isn't part of the session", () => {
+      const sessionId = "session_feedback_wrong_chunk";
+      sessionStore.append(sessionId, makeResponse({ chunk_id: "real_chunk" }), 100, "text");
+      expect(sessionStore.recordMitigationFeedback(sessionId, "not_a_real_chunk", "used")).toBe(false);
+    });
+
+    it("records the action against the matching chunk and leaves other chunks untouched", () => {
+      const sessionId = "session_feedback_record";
+      sessionStore.append(sessionId, makeResponse({ chunk_id: "c1" }), 100, "first");
+      sessionStore.append(sessionId, makeResponse({ chunk_id: "c2" }), 200, "second");
+
+      expect(sessionStore.recordMitigationFeedback(sessionId, "c1", "used")).toBe(true);
+
+      const chunks = sessionStore.get(sessionId);
+      expect(chunks?.find((c) => c.chunk_id === "c1")?.mitigationFeedback).toBe("used");
+      expect(chunks?.find((c) => c.chunk_id === "c2")?.mitigationFeedback).toBeUndefined();
+    });
+
+    it("overwrites a prior action if feedback is recorded twice for the same chunk", () => {
+      const sessionId = "session_feedback_overwrite";
+      sessionStore.append(sessionId, makeResponse({ chunk_id: "c1" }), 100, "first");
+
+      sessionStore.recordMitigationFeedback(sessionId, "c1", "used");
+      sessionStore.recordMitigationFeedback(sessionId, "c1", "dismissed");
+
+      expect(sessionStore.get(sessionId)?.[0]?.mitigationFeedback).toBe("dismissed");
+    });
+  });
 });

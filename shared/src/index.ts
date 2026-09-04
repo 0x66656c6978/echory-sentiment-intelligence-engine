@@ -93,6 +93,25 @@ export const SessionSummaryResponseSchema = z.object({
 });
 export type SessionSummaryResponse = z.infer<typeof SessionSummaryResponseSchema>;
 
+// ─── Mitigation feedback (app-specific dashboard feature, not part of the
+// mandatory Track A/B contract above -- safe to extend without risking the
+// automated evaluation harness) ──────────────────────────────────────────────
+
+/** Fastify route pattern (`:session_id`, not a real value). */
+export const API_MITIGATION_FEEDBACK_ROUTE_PATTERN = "/api/telemetry/session/:session_id/mitigation-feedback";
+/** Client-side URL builder for a concrete session id. */
+export const API_MITIGATION_FEEDBACK_PATH = (sessionId: string) =>
+  `/api/telemetry/session/${sessionId}/mitigation-feedback`;
+
+export const MitigationFeedbackActionSchema = z.enum(["used", "dismissed"]);
+export type MitigationFeedbackAction = z.infer<typeof MitigationFeedbackActionSchema>;
+
+export const MitigationFeedbackRequestSchema = z.object({
+  chunk_id: z.string().min(1),
+  action: MitigationFeedbackActionSchema,
+});
+export type MitigationFeedbackRequest = z.infer<typeof MitigationFeedbackRequestSchema>;
+
 // ─── LLM provider seam (Phase 3 implements local + cloud against this) ──────
 
 export const SentimentClassificationSchema = TelemetryChunkResponseSchema.omit({

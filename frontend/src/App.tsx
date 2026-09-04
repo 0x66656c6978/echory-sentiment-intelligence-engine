@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import type { MitigationFeedbackAction, TelemetryChunkRequest } from "@echory/contract";
 import { sendChunk } from "./lib/api";
 import { buildNegotiationScript } from "./lib/negotiationScript";
 import type { ChunkEntry } from "./lib/types";
@@ -17,51 +18,66 @@ const STATUS_META: Record<SessionStatus, { label: string; pillClass: string; dot
   error: { label: "Connection lost", pillClass: "bg-accent-300 text-accent-900", dotClass: "bg-accent-700", breathe: false },
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-// Deliberate pacing between chunks -- real speech doesn't arrive in a burst,
-// and a live-feeling call is the whole point of this demo. Not a technical
-// requirement of the API itself.
-const CHUNK_PACING_MS = 1400;
-
 export default function App() {
   const [entries, setEntries] = useState<ChunkEntry[]>([]);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("standby");
+  const [isSending, setIsSending] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
+  const scriptRef = useRef<TelemetryChunkRequest[]>([]);
+  const nextIndexRef = useRef(0);
   // React only disables the button after the next render commits, so a
   // second click landing before that repaint isn't blocked by `disabled`
-  // alone -- this ref is set synchronously, closing that race so two
-  // sessions can never run concurrently and interleave their state updates.
-  const isRunningRef = useRef(false);
+  // alone -- this ref is set synchronously, closing that race so the same
+  // chunk can never be sent twice from overlapping clicks.
+  const isSendingRef = useRef(false);
 
-  const runSession = useCallback(async () => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
+  // One click sends exactly one chunk -- streaming the whole scripted call
+  // automatically (the original behavior) dumped all 9 chunks in ~10s, which
+  // read as overwhelming rather than live. Standby/complete/error starts a
+  // fresh session on the next click; mid-session, it advances to the next
+  // chunk in the same script.
+  const advance = useCallback(async () => {
+    if (isSendingRef.current) return;
+    isSendingRef.current = true;
+    setIsSending(true);
 
-    const script = buildNegotiationScript();
-    sessionIdRef.current = script[0]?.session_id ?? null;
-    setEntries([]);
-    setSessionStatus("running");
+    try {
+      if (sessionStatus !== "running") {
+        const script = buildNegotiationScript();
+        scriptRef.current = script;
+        nextIndexRef.current = 0;
+        sessionIdRef.current = script[0]?.session_id ?? null;
+        setEntries([]);
+        setSessionStatus("running");
+      }
 
-    for (const request of script) {
+      const index = nextIndexRef.current;
+      const request = scriptRef.current[index];
+      if (!request) return; // script already exhausted -- button should be disabled before this can happen
+
       setEntries((prev) => [...prev, { request, status: "pending" }]);
       try {
         const response = await sendChunk(request);
         setEntries((prev) =>
           prev.map((entry) => (entry.request.chunk_id === request.chunk_id ? { ...entry, response, status: "done" } : entry)),
         );
+        nextIndexRef.current = index + 1;
+        if (nextIndexRef.current >= scriptRef.current.length) setSessionStatus("complete");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         setEntries((prev) =>
           prev.map((entry) => (entry.request.chunk_id === request.chunk_id ? { ...entry, status: "error", error: message } : entry)),
         );
         setSessionStatus("error");
-        isRunningRef.current = false;
-        return;
       }
-      await sleep(CHUNK_PACING_MS);
+    } finally {
+      isSendingRef.current = false;
+      setIsSending(false);
     }
-    setSessionStatus("complete");
-    isRunningRef.current = false;
+  }, [sessionStatus]);
+
+  const handleMitigationFeedback = useCallback((chunkId: string, action: MitigationFeedbackAction) => {
+    setEntries((prev) => prev.map((entry) => (entry.request.chunk_id === chunkId ? { ...entry, mitigationFeedback: action } : entry)));
   }, []);
 
   const latestDone = [...entries].reverse().find((entry) => entry.status === "done" && entry.response);
@@ -83,7 +99,16 @@ export default function App() {
   })();
 
   const statusMeta = STATUS_META[sessionStatus];
-  const isRunning = sessionStatus === "running";
+  const totalChunks = scriptRef.current.length;
+  const buttonLabel = isSending
+    ? "Sending…"
+    : sessionStatus === "running"
+      ? `Send next chunk (${nextIndexRef.current + 1} of ${totalChunks})`
+      : sessionStatus === "complete"
+        ? "Start new call"
+        : sessionStatus === "error"
+          ? "Retry — start new call"
+          : "Initiate simulated call";
 
   return (
     <div className="flex h-screen flex-col bg-bg">
@@ -104,15 +129,16 @@ export default function App() {
           </div>
           {latestDone?.response && (
             <span className="font-body text-xs text-neutral-600">
-              {latestDone.response.processing_latency_ms} ms · {entries.length} chunks
+              {latestDone.response.processing_latency_ms} ms · {entries.length}
+              {totalChunks ? ` / ${totalChunks}` : ""} chunks
             </span>
           )}
           <button
-            onClick={runSession}
-            disabled={isRunning}
+            onClick={advance}
+            disabled={isSending}
             className="rounded-full bg-accent px-4 py-2 font-heading text-xs text-bg transition-colors hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {isRunning ? "Session in progress…" : "Initiate simulated call"}
+            {buttonLabel}
           </button>
         </div>
       </header>
@@ -125,7 +151,13 @@ export default function App() {
         <aside className="flex w-full flex-col gap-4 lg:h-full lg:w-[352px] lg:shrink-0">
           <TrafficLight riskLevel={currentRiskLevel} />
           <VolatilityAlert active={volatilityActive} />
-          <MitigationPanel suggestion={mitigationSuggestion} />
+          <MitigationPanel
+            key={latestDone?.request.chunk_id ?? "none"}
+            suggestion={mitigationSuggestion}
+            sessionId={sessionIdRef.current}
+            chunkId={latestDone?.request.chunk_id ?? null}
+            onFeedback={handleMitigationFeedback}
+          />
           <AggregateTiles volatilityIndex={volatilityIndex} dominantTone={dominantTone} />
         </aside>
       </main>
