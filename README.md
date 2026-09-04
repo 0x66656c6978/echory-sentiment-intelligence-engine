@@ -5,19 +5,20 @@ Echory's Senior Full-Stack Engineer technical assessment (Track A — Full Stack
 
 **Status:** Phases 1-4 done (backend, frontend, Docker, tests, LLM observability, real LLM
 inference wired up and swappable to any OpenAI-compatible endpoint, latency/concurrency verified
-end-to-end, full UI polish pass). `ARCHITECTURE.md`/`AI_COLLABORATION.md` finalization and
-submission docs (ticket 0010) are next. See [ROADMAP.md](ROADMAP.md) for the phase plan and
+end-to-end, full UI polish pass, `ARCHITECTURE.md` written). One open architectural question
+remains — see [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md) — blocked on Pascal's
+input, not on anything technical. See [ROADMAP.md](ROADMAP.md) for the phase plan and
 [docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
 
 - Original challenge brief: [docs/CHALLENGE.md](docs/CHALLENGE.md)
+- **Architecture** (system diagram, LLM provider choice, streaming/concurrency, sarcasm/hidden-intent
+  approach, known limitations): [ARCHITECTURE.md](ARCHITECTURE.md)
 - AI collaboration strategy: [AI_COLLABORATION.md](AI_COLLABORATION.md)
 - **LLM model selection** (12 local + 3 cloud models benchmarked, final choice and full numbers):
   [docs/benchmark-results.md](docs/benchmark-results.md)
 - **Real end-to-end latency verification** (real HTTP requests against the deployed server, not
   just the raw model call): p50 332ms, p95 366ms, 0% over the 500ms failure line — see
   [ticket 0008](docs/tickets/finished/0008-latency-concurrency-verification.md)
-- Architecture (technical decisions, LLM choice, limitations): `ARCHITECTURE.md` — added once the
-  implementation stabilizes (ticket 0010)
 
 ## Setup
 
