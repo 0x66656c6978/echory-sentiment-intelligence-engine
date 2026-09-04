@@ -78,9 +78,12 @@ original strategy record.
   a warm "Organic" theme (cream/terracotta/sage, card-based stream) ported from an independently
   produced design spec/mockup — same four elements, same live-data behavior, different visual
   system. See `docs/design/0009-alt-mockup/` and ticket 0009's log for the full story.
-- `ARCHITECTURE.md`, `SETUP.md`, finalize `AI_COLLABORATION.md` with what actually happened
-- Session summary endpoint (not required for Track A, cheap to add, shows completeness) — only if
-  time allows
+- `ARCHITECTURE.md` — done (ticket 0010), covers every deliverable-#4 bullet from `docs/CHALLENGE.md`;
+  explicitly flags the ticket 0017 Ollama question as the one provisional piece, everything else
+  settled. `AI_COLLABORATION.md` finalization is Felix's own to do (its header restricts AI edits;
+  a draft was written to a separate file for him to review/paste in instead).
+- Session summary endpoint — done (ticket 0010): `GET /api/telemetry/session/:session_id/summary`,
+  Track B parity, implemented once time allowed and verified against the real Docker container.
 
 ### Phase 5 — Nice-to-haves (only if time remains)
 - Scripted chunk-streaming simulator over WebSocket for a livelier Loom demo — build only if it turns

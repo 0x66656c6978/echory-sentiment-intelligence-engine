@@ -22,7 +22,7 @@ export async function telemetryRoutes(app: FastifyInstance, provider: SentimentP
       ...classification,
     };
 
-    sessionStore.append(chunk.session_id, response, chunk.timestamp_ms);
+    sessionStore.append(chunk.session_id, response, chunk.timestamp_ms, chunk.text);
 
     // Only providers that made a real LLM call populate `observability` (the
     // rule-based placeholder never does) — logging just follows that signal

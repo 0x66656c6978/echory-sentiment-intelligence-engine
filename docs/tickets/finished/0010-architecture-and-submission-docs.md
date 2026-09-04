@@ -87,9 +87,50 @@ usage/prompts/failures. Did not touch it or work around the restriction; asked F
 he wants to handle it rather than silently skipping the DoD item or silently overriding his own
 stated rule.
 
-**Not started**: the optional session-summary endpoint (explicitly "only if time remains after the
-above" per this ticket's DoD) — coming back to it once the AI_COLLABORATION.md question is resolved,
-time permitting before the deadline.
-
 `npm test` re-confirmed passing (40/40) — this ticket's changes are documentation-only, but checked
 rather than assumed.
+
+### 2026-09-04 — Felix's answers: draft AI_COLLABORATION.md separately, implement the summary endpoint now
+
+Asked both open questions directly rather than guessing. Felix: draft AI_COLLABORATION.md additions
+to a separate scratch file for his own review/paste-in, don't touch the real file (see the standing
+note above — his call was to work around the restriction by not editing it at all, not to lift the
+restriction); and yes, implement the session summary endpoint now given the deadline.
+
+**`GET /api/telemetry/session/:session_id/summary` implemented.** Extended `SessionStore` rather
+than computing aggregates in the route handler, matching the existing pattern (`observability/
+stats.ts` computes latency stats separately too):
+- `SessionStore.append()` now also takes the original chunk `text` (route handler already had it
+  from the validated request) — needed because `TelemetryChunkResponse` alone has no `text` field,
+  and `RiskMomentSchema.text_excerpt` needs the real transcript, not something invented.
+- `SessionStore.summarize()` computes `dominant_sentiment` (mode, ties break to whichever sentiment
+  was seen first), `aggregated_volatility_score` (share of chunks with `volatility_flag` true — the
+  same simpler-than-a-risk-weighted-mean definition already used by
+  `frontend/src/components/AggregateTiles.tsx`, kept identical rather than inventing a second
+  definition for the same concept in two places), and `top_risk_moments` (severity descending, ties
+  broken by recency, capped at 3, `text_excerpt` truncated to 100 chars with an ellipsis).
+- Added `API_SESSION_SUMMARY_ROUTE_PATTERN` to `@echory/contract` alongside the existing
+  `API_SESSION_SUMMARY_PATH` URL-builder function — Fastify needs a `:session_id`-style pattern for
+  route registration, which is a different string shape than the builder produces; one constant for
+  each, not the same path shape hand-typed twice.
+- Unknown `session_id` → `404 {error: "not_found", message}`, not a 200 with empty/zeroed fields —
+  consistent with ticket 0013's `{error, ...}` shape convention, extended to a status code that
+  convention hadn't covered yet.
+
+Added 4 new `SessionStore.summarize()` unit tests (dominant-sentiment tie-break, volatility-score
+arithmetic, risk-ranking with a recency tie-break, excerpt truncation) and 2 integration tests
+(404 for an unknown session; a real session built up through the actual `POST` endpoint, then
+summarized) — full suite now 46/46.
+
+**Verified against the real Docker container, not just `npm test`** — this project is Docker-only
+now (ticket 0016), so that's the environment that actually matters: rebuilt the image
+(`docker compose build backend`), recreated the container, sent two real chunks through
+`POST /api/telemetry/stream` to a fresh session (one calm, one an aggressive ultimatum), then
+`GET` the summary and got back `chunk_count: 2`, `aggregated_volatility_score: 0.5` (1 of 2
+flagged), `dominant_sentiment: "positive"` (a genuine 1-1 tie, correctly broken to first-seen), and
+`top_risk_moments` correctly ordered high-risk chunk before low-risk. Also confirmed the 404 path
+against the same running container for an unknown session id.
+
+Both DoD items (`AI_COLLABORATION.md` finalization, session summary endpoint) now resolved — one
+implemented and verified, one explicitly deferred per Felix's own instruction and handled outside
+this ticket (draft delivered separately, not committed to the repo). Moving to `finished/`.

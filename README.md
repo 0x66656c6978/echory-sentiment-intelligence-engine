@@ -19,6 +19,10 @@ input, not on anything technical. See [ROADMAP.md](ROADMAP.md) for the phase pla
 - **Real end-to-end latency verification** (real HTTP requests against the deployed server, not
   just the raw model call): p50 332ms, p95 366ms, 0% over the 500ms failure line — see
   [ticket 0008](docs/tickets/finished/0008-latency-concurrency-verification.md)
+- **Session summary endpoint** (Track B parity, not required for Track A but implemented):
+  `GET /api/telemetry/session/:session_id/summary` — returns `chunk_count`, `dominant_sentiment`,
+  `aggregated_volatility_score`, and the top 3 `top_risk_moments` for a session; `404` for an
+  unknown session id
 
 ## Setup
 

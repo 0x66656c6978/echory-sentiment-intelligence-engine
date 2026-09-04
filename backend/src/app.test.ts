@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach } from "vitest";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { SentimentAnalysisResult, SentimentProvider, TelemetryChunkRequest } from "@echory/contract";
-import { TelemetryChunkResponseSchema } from "@echory/contract";
+import { API_SESSION_SUMMARY_PATH, TelemetryChunkResponseSchema } from "@echory/contract";
 import { buildApp } from "./app.js";
 import { DEFAULT_LLM_LOG_PATH, readLLMCallLog } from "./observability/llmLogger.js";
 
@@ -178,5 +178,42 @@ describe("POST /api/telemetry/stream — LLM call observability logging (ticket 
 
     const logged = readLLMCallLog().filter((e) => e.chunk_id === "chunk_no_observability_test");
     expect(logged).toHaveLength(0);
+  });
+});
+
+describe("GET /api/telemetry/session/:session_id/summary (ticket 0010, Track B endpoint)", () => {
+  it("returns 404 for a session that was never streamed to", async () => {
+    const app = await buildApp();
+    const response = await app.inject({ method: "GET", url: API_SESSION_SUMMARY_PATH("session_summary_unknown") });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ error: "not_found" });
+  });
+
+  it("summarizes a real session built up through the actual POST endpoint", async () => {
+    const app = await buildApp(new FakeInferenceProvider());
+    const sessionId = "session_summary_integration";
+
+    await app.inject({
+      method: "POST",
+      url: "/api/telemetry/stream",
+      payload: { ...VALID_REQUEST, chunk_id: "sum_1", session_id: sessionId },
+    });
+    await app.inject({
+      method: "POST",
+      url: "/api/telemetry/stream",
+      payload: { ...VALID_REQUEST, chunk_id: "sum_2", session_id: sessionId },
+    });
+
+    const response = await app.inject({ method: "GET", url: API_SESSION_SUMMARY_PATH(sessionId) });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.session_id).toBe(sessionId);
+    expect(body.chunk_count).toBe(2);
+    // FakeInferenceProvider always classifies "positive" -- both chunks agree.
+    expect(body.dominant_sentiment).toBe("positive");
+    expect(body.top_risk_moments.length).toBeGreaterThan(0);
+    expect(body.top_risk_moments[0]).toHaveProperty("text_excerpt");
   });
 });

@@ -30,7 +30,7 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0007-inference-provider](finished/0007-inference-provider.md) | P0 | finished | Phase 3 |
 | [0008-latency-concurrency-verification](finished/0008-latency-concurrency-verification.md) | P0 | finished | Phase 4 |
 | [0009-required-ui-components](finished/0009-required-ui-components.md) | P0 | finished | Phase 4 |
-| [0010-architecture-and-submission-docs](in_progress/0010-architecture-and-submission-docs.md) | P0 | in_progress | Phase 4 |
+| [0010-architecture-and-submission-docs](finished/0010-architecture-and-submission-docs.md) | P0 | finished | Phase 4 |
 | [0011-nice-to-haves](open/0011-nice-to-haves.md) | P2 | open | Phase 5 |
 | [0012-dockerize-backend](finished/0012-dockerize-backend.md) | P1 | finished | Phase 1 |
 | [0013-normalize-error-response-contract](finished/0013-normalize-error-response-contract.md) | P1 | finished | Phase 2 |

@@ -189,18 +189,19 @@ model selection process, not just the prompt:
   assessment's single-instance scope; a production version would move this to Redis or a database.
 - **No auth or rate limiting** on the API — appropriate for a technical assessment reachable only on
   `localhost`, not appropriate as-is for a real deployment.
-- **Session summary endpoint** (`GET /api/telemetry/session/:session_id/summary`) — a Track B
-  requirement, not Track A. The contract schema and the underlying data (`SessionSummaryResponseSchema`,
-  `sessionStore`'s per-session history) already exist; only the route itself doesn't. Deliberately
-  left for "if time remains" (ticket 0010) rather than taking time from the required Track A work.
+
+`GET /api/telemetry/session/:session_id/summary` (the Track B requirement) is implemented — not a
+limitation, but worth noting it went in late (ticket 0010) once time allowed: `dominant_sentiment`
+is the modal sentiment across the session, `aggregated_volatility_score` is the share of chunks
+flagged volatile (a deliberately simpler definition than a risk-weighted mean — a product judgement,
+documented as such in `SessionStore.summarize()`), and `top_risk_moments` is the top 3 by severity,
+ties broken by recency. Returns `404` for an unknown session rather than an empty 200.
 
 ## What would come next with more time
 
 1. Resolve ticket 0017 with Pascal and containerize Ollama if GPU passthrough is confirmed workable
    — the last piece needed for a genuinely single-command, fully self-contained `docker compose up`.
 2. A persistent session store (Redis) if this ever needed to run as more than one backend instance.
-3. The session summary endpoint, for Track B parity and to exercise `sessionStore.get`, which is
-   currently written but never read.
-4. The Vite 8 upgrade, once a Node version bump is acceptable.
-5. A scripted WebSocket streaming demo, purely for a livelier Loom walkthrough — cosmetic, not
+3. The Vite 8 upgrade, once a Node version bump is acceptable.
+4. A scripted WebSocket streaming demo, purely for a livelier Loom walkthrough — cosmetic, not
    scoring-relevant, so it stayed last in line (ticket 0011).

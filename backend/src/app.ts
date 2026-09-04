@@ -3,6 +3,7 @@ import type { SentimentProvider } from "@echory/contract";
 import cors from "@fastify/cors";
 import { healthRoutes } from "./routes/health.js";
 import { telemetryRoutes } from "./routes/telemetry.js";
+import { sessionSummaryRoutes } from "./routes/sessionSummary.js";
 import { getProvider } from "./provider/index.js";
 
 /**
@@ -19,6 +20,7 @@ export async function buildApp(overrideProvider?: SentimentProvider): Promise<Fa
 
   await app.register(healthRoutes);
   await telemetryRoutes(app, provider);
+  await sessionSummaryRoutes(app);
 
   // Normalizes every failure mode Fastify can produce before/outside our own
   // route handlers (malformed JSON, empty body, wrong Content-Type, any

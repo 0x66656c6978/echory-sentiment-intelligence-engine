@@ -15,6 +15,9 @@ import { z } from "zod";
 
 export const DEFAULT_PORT = 3000;
 export const API_TELEMETRY_STREAM_PATH = "/api/telemetry/stream";
+/** Fastify route pattern (`:session_id`, not a real value) -- register the route with this, not a hand-typed literal. */
+export const API_SESSION_SUMMARY_ROUTE_PATTERN = "/api/telemetry/session/:session_id/summary";
+/** Client-side URL builder for a concrete session id. */
 export const API_SESSION_SUMMARY_PATH = (sessionId: string) =>
   `/api/telemetry/session/${sessionId}/summary`;
 export const WS_TELEMETRY_PATH = "/ws/telemetry";
