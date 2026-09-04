@@ -52,7 +52,8 @@ it doesn't silently fall through at submission time.
 ### 2026-09-04 — `ARCHITECTURE.md` written; explicitly flagged as provisional per Felix's instruction
 
 Felix: "implement 0010 but know it might change once we have an answer from Pascal" — referring to
-[ticket 0017](../blocked/0017-containerize-ollama.md)'s open Ollama-containerization question.
+[ticket 0017](../finished/0017-containerize-ollama.md)'s open Ollama-containerization question (at
+the time this was written; resolved since — see that ticket's log).
 Wrote `ARCHITECTURE.md` with that in mind: a status note at the very top names the one provisional
 piece explicitly, and the Known Limitations / What's Next sections point at ticket 0017 rather than
 asserting a final architecture. Everything else in the document reflects settled, already-verified
