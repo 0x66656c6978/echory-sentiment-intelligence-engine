@@ -131,3 +131,23 @@ local model regardless of its latency advantage. He explicitly confirmed the 14%
 finding is "a good find" and that documenting the measurement and the decision *is* the task, not
 something to be engineered away. This ticket's `groq/qwen3.8-27b` numbers are exactly what makes
 that write-up (`ARCHITECTURE.md`, ticket 0018) credible rather than a guess.
+
+### 2026-09-04 — Re-verified end-to-end; the 14% figure doesn't hold exactly, but the finding does
+Felix asked to double/triple-check the Groq latency numbers before defending them. All prior Groq
+numbers in this ticket came from `llm-benchmark.ts` calling the model directly (with its own retry-
+with-backoff around rate limits) — never through the real deployed server, unlike `phi4-mini` which
+ticket 0008 re-verified end-to-end. Ran the same `backend/scripts/latency-benchmark.ts` ticket 0008
+used, now paced (see that script's log for why — an unpaced run blew through Groq's free-tier
+7000-ITPM limit after ~7 calls and 500'd the rest, a separate real gap fixed in
+[ticket 0007](0007-inference-provider.md)).
+
+Clean 28/28 result: 384ms avg, p50 367ms, p95 475ms, **4% over 500ms (1/28)** — vs. this ticket's
+original 378ms avg / **14%** over 500ms (4/28) / p95 707ms. Average latency holds up almost exactly;
+the tail-risk percentage doesn't. Not treated as a contradiction to resolve, and not cherry-picked as
+the better-looking number either: at n=28, both 14% and 4% are plausible draws from the same
+underlying tail (today's run still had one real spike, 794ms) — Groq-side queue/network variance
+that neither run controls for. The honest conclusion: the *qualitative* finding stands (an
+occasional, real, non-zero chance of exceeding 500ms, unfixable via prompt/code changes on our end),
+but the specific "14%" figure was always a small-sample estimate and shouldn't be quoted as a
+precise, stable number — `ARCHITECTURE.md` updated to say so rather than restating 14% as settled
+fact.

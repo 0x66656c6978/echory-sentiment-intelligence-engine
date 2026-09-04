@@ -186,3 +186,29 @@ placeholder-mode default). `ROADMAP.md`'s Phase 3 section and `docs/tickets/inde
 reflect completion.
 
 All DoD items are now satisfied. Moving to `finished/`.
+
+### 2026-09-04 — Found and fixed: no handling for a Groq 429 (rate limit)
+Re-verifying ticket 0015's Groq latency numbers (Felix asked to double/triple-check them) surfaced
+a real gap: `callOpenAiCompatible` had zero handling for a 429 response — it just threw, and
+`telemetry.ts` turned that into a raw 500 with no classification returned at all. Found by accident
+running the 28-case latency benchmark unpaced: it blew through Groq's free-tier 7000-input-tokens/
+minute limit after ~7 rapid calls and every remaining request failed outright. Not purely a
+benchmark-script artifact either — at this prompt's ~980 tokens, the free tier sustains roughly 7
+requests/minute, close enough to plausible real-time chunk pacing that it's worth defending against,
+not just an artificial burst.
+
+Fixed with one bounded retry: on a 429, parse the wait Groq itself reports (`retry-after` header,
+falling back to the `"try again in Xs"` text in the body, capped at 10s so a missing/malformed
+signal can't stall a request indefinitely), sleep, retry once, and only then throw if it still
+fails. Mirrors the retry pattern already used in `backend/scripts/llm-benchmark.ts` (ticket 0015)
+rather than inventing a new one. Deliberately only one retry, not a loop — a sustained overload
+should surface as a failure, not get masked by every request stalling longer and longer.
+
+2 new tests (fake timers, mocked fetch): confirms a single 429 is retried and succeeds, and that two
+consecutive 429s still throw rather than retrying forever. Also verified against the real Groq API,
+not just mocks: fired 10 rapid real requests through the actual running server — the first ~7
+succeeded normally (320-740ms), the rest hit the rate limit and the retry kicked in, still returning
+a correct classification, just slower (5.9-9.1s instead of a 500). That's a real, accepted trade —
+slow-but-correct beats a hard failure, but a multi-second response is nowhere near the 500ms line
+either, so this doesn't turn the tail-latency risk into a non-issue, just a different kind of issue
+than an outright error. Documented in `ARCHITECTURE.md`.

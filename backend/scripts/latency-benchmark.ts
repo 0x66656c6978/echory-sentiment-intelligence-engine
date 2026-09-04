@@ -89,10 +89,22 @@ async function main() {
   await warmupRes.json();
   console.log(`(cold-start warm-up call: ${Date.now() - warmupStart}ms, discarded -- one-time server-startup cost, not steady-state)\n`);
 
+  // Discovered running this script for real against Groq (2026-09-04): its
+  // free tier caps input tokens per minute (7000 ITPM as of this writing),
+  // and 28 back-to-back ~980-token requests blows through that after ~7
+  // calls, 500ing the rest -- not a latency problem, a hard failure the
+  // production InferenceProvider doesn't retry around. Pacing at one request
+  // per ~9s keeps a rolling minute safely under the limit (6 * 980 ≈ 5880)
+  // so this script measures real per-call latency instead of rate-limit
+  // noise. Skipped for a local endpoint, which has no such per-minute cap.
+  const isCloudEndpoint = !/localhost|127\.0\.0\.1/.test(process.env.INFERENCE_BASE_URL ?? "");
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const clientLatencies: number[] = [];
   const serverLatencies: number[] = [];
 
   for (const testCase of ALL_CASES) {
+    if (isCloudEndpoint) await sleep(9000);
     const clientStart = Date.now();
     const res = await fetch(`http://127.0.0.1:${PORT}/api/telemetry/stream`, {
       method: "POST",

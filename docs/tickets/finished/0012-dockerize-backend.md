@@ -99,3 +99,26 @@ real request that failed with the exact predicted `ECONNREFUSED` before the host
 sent it again after the fix and got a genuine `phi4-mini` classification back (3.2s cold model
 load on the first call, 514ms on the second, consistent with the cold/warm pattern from tickets
 0006-0008).
+
+### 2026-09-04 — Build-time double-check: couldn't reproduce a slow `npm ci`, found what it likely was
+Felix recalled a manual `docker build --no-cache` run (around the time of the `.env`-loading bug
+above) taking a few minutes and appearing to hang on `npm ci`, with no logging to explain why, and
+asked to double/triple-check current build times before trusting them. Measured for real rather than
+guessing:
+- `docker compose build --no-cache` with the existing local BuildKit cache warm (base images already
+  pulled from earlier builds this session): **13.3s** total, `npm ci` 3.8s (frontend) / 4.8s
+  (backend).
+- Same build after `docker builder prune -af` (wipes the *entire* BuildKit cache, including base
+  image layers — the closest reproduction of a genuinely first-ever build on this machine): **16.0s**
+  total, `npm ci` 4.3s / 5.5s. Base image pulls (`node:20-alpine`, `nginx:alpine`) added under 2s
+  combined — not the bottleneck either.
+
+Confirmed first: `.dockerignore` correctly excludes `node_modules`/`.git`/`dist` (build context is
+~360KB, not gigabytes) — ruled out a bloated context transfer being mistaken for a hung `npm ci`.
+Could not reproduce anything close to "a few minutes" even from a fully wiped build cache, so the
+earlier experience likely wasn't the build itself — the most probable explanation is Docker
+Desktop's own engine/VM cold-starting at that moment (a first launch after a reboot commonly takes
+30s-2min independent of anything in this repo), which can make whatever step happens to be printing
+last in the terminal look like it's the thing hanging. Documented honestly in `README.md`
+(current real numbers, plus the Docker-Desktop-startup caveat) rather than asserting a root cause
+that wasn't directly confirmed.

@@ -61,25 +61,47 @@ in [`docs/benchmark-results.md`](docs/benchmark-results.md)):
 
 | Model | Sentiment acc. | Risk acc. | Avg latency | % of calls > 500ms |
 |---|---|---|---|---|
-| **`groq/qwen3.8-27b` (shipped default)** | 93% | 71% | 378ms | **14%** |
+| **`groq/qwen3.8-27b` (shipped default)** | 93% | 71% | 378-384ms | **4-14%** (two runs, see below) |
 | `phi4-mini` (local swap-in) | 82% | 75% | 408ms | 0% |
 
-`qwen3.8-27b` beats `phi4-mini` on accuracy *and* average latency — but it carries a measured ~14%
-chance of any individual call exceeding the 500ms line, from Groq-side queue/network variance that
-no amount of prompt or code tuning fixes (directly tested, not assumed: a shorter prompt doesn't
-help, since prefill time was never the bottleneck — see `docs/benchmark-results.md`'s
-prompt-shortening diagnostic). Before Pascal's answer, we had provisionally gone the other way —
-keeping the local model as default specifically to avoid that tail risk, since the challenge scores
-latency as a pass/fail cliff, not a smooth penalty (*"consistently exceeding 500ms counts as a
-failure"*). Pascal's answer settles which provider is the *default* on infrastructure grounds
-(no GPU/install assumption), independent of that latency argument — and he confirmed directly that
-documenting the measurement and the decision, rather than resolving the tradeoff away, is itself
-part of what's being assessed here. So: this is a known, accepted risk on the shipped default, not
-an oversight. Both the accuracy and latency numbers above were re-verified end-to-end against the
-real, running server (not just raw model calls) — ticket 0008 measured `phi4-mini`'s p50 332ms /
-p95 366ms / 0/28 over 500ms in steady state; the equivalent full end-to-end run was not repeated for
-`groq/qwen3.8-27b` specifically, so the 378ms/14% figures above are ticket 0015's raw-model-call
-measurements, not a ticket-0008-style server-level re-verification.
+`qwen3.8-27b` beats `phi4-mini` on accuracy *and* average latency — but it carries a measured tail
+risk of an individual call exceeding the 500ms line, from Groq-side queue/network variance that no
+amount of prompt or code tuning fixes (directly tested, not assumed: a shorter prompt doesn't help,
+since prefill time was never the bottleneck — see `docs/benchmark-results.md`'s prompt-shortening
+diagnostic). Before Pascal's answer, we had provisionally gone the other way — keeping the local
+model as default specifically to avoid that tail risk, since the challenge scores latency as a
+pass/fail cliff, not a smooth penalty (*"consistently exceeding 500ms counts as a failure"*).
+Pascal's answer settles which provider is the *default* on infrastructure grounds (no GPU/install
+assumption), independent of that latency argument — and he confirmed directly that documenting the
+measurement and the decision, rather than resolving the tradeoff away, is itself part of what's
+being assessed here. So: this is a known, accepted risk on the shipped default, not an oversight.
+
+**Re-verified end-to-end 2026-09-04** (against the real, running server via
+`npm run benchmark:latency`, not just raw model calls — the same gap ticket 0008 closed for
+`phi4-mini` had never been repeated for the shipped Groq default until now): 384ms avg, p50 367ms,
+p95 475ms, **4% of calls over 500ms (1/28)**. Ticket 0015's original number was 378ms avg / **14%**
+over 500ms (4/28) / p95 707ms. The average latency holds up almost exactly; the tail-risk percentage
+doesn't — and that's expected, not a discrepancy to explain away: at a 28-sample size, "14%" and "4%"
+are both consistent with the same underlying tail (one or a few slow calls out of ~28, from Groq-side
+variance neither run controls), just different draws from it. Reported honestly rather than
+cherry-picking the better-looking re-run: the qualitative finding stands (an occasional real spike —
+today's run still had one call at 794ms — driven by cloud-side variance, not something prompt or code
+changes fix), the exact percentage is noisy at this sample size and shouldn't be quoted as a precise
+figure.
+
+**A second, more serious gap surfaced by that same re-verification, and fixed**: `InferenceProvider`
+had no handling at all for a Groq 429 (rate limit) — it threw, and the route turned that into a raw
+500 with zero classification returned. Found by accident (an unpaced 28-call burst blew through
+Groq's free-tier 7000-input-tokens/minute limit after ~7 calls), but the underlying constraint isn't
+just a benchmark-script artifact: at this prompt's ~980 tokens, the free tier allows roughly 7
+requests/minute sustained, which even steady non-bursty real-time usage could approach. Fixed with a
+single bounded retry that honors Groq's own reported wait time (capped at 10s) before giving up —
+verified against the real API (not just mocked): the first ~7 rapid calls each succeeded normally
+(320-740ms), the next few hit the rate limit and the retry kicked in, still returning a correct
+classification, just slower (5.9s-9.1s instead of erroring outright). That's a real, explicit
+trade — a slow-but-correct response beats a fast failure, but a 5-9s response is nowhere near the
+500ms line either. Two consecutive 429s still throw rather than retrying indefinitely (an actual
+sustained overload shouldn't be masked by silently stalling every request longer and longer).
 
 **Hardware the local-swap-in numbers were produced on** (per Pascal's explicit request that latency
 figures be hardware-qualified): NVIDIA GeForce RTX 5080, 16GB VRAM (Windows Task Manager/WMI
@@ -249,7 +271,9 @@ minute rate limit once under far lighter load than a real evaluation run would p
 output-tokens-per-minute limit than expected. Deliberately doubling request volume against an
 unknown ceiling risks turning an occasional slow response into a burst of hard failures instead —
 a worse outcome than the tail latency it would be trying to avoid. Documented here rather than
-silently dropped or built without being asked to.
+silently dropped or built without being asked to. (Update, 2026-09-04: that rate limit is no longer
+a bare hard failure at all — see [LLM provider choice](#llm-provider-choice-and-why) above for the
+bounded-retry fix.)
 
 ## What would come next with more time
 

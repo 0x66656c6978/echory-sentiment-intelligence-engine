@@ -129,6 +129,62 @@ describe("InferenceProvider — default OpenAI-compatible path", () => {
     await expect(provider.analyze(VALID_CHUNK)).rejects.toThrow(/responded 503/);
   });
 
+  it("retries once on a 429 (rate limit), honoring the wait Groq reports, and succeeds instead of failing outright", async () => {
+    vi.useFakeTimers();
+    const rateLimitedRes = {
+      ok: false,
+      status: 429,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve('{"error":{"message":"Please try again in 2.5s"}}'),
+      headers: { get: () => null },
+    };
+    const successRes = fakeFetch(openAiResponse(JSON.stringify(VALID_CLASSIFICATION)))();
+    const fetchMock = vi.fn().mockResolvedValueOnce(rateLimitedRes).mockResolvedValueOnce(successRes);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new InferenceProvider({
+      baseUrl: "https://api.groq.com/openai/v1",
+      model: "qwen/qwen3.8-27b",
+      apiKey: "test-key",
+      disableThinking: false,
+    });
+    const resultPromise = provider.analyze(VALID_CHUNK);
+    // Let the 429 branch's own await (reading .text()) settle before advancing the retry timer.
+    await vi.advanceTimersByTimeAsync(3000);
+    const result = await resultPromise;
+
+    expect(result.classification).toEqual(VALID_CLASSIFICATION);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it("does not retry a second time -- two consecutive 429s throw instead of retrying forever", async () => {
+    vi.useFakeTimers();
+    const rateLimitedRes = () => ({
+      ok: false,
+      status: 429,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve('{"error":{"message":"Please try again in 1s"}}'),
+      headers: { get: () => null },
+    });
+    const fetchMock = vi.fn().mockResolvedValueOnce(rateLimitedRes()).mockResolvedValueOnce(rateLimitedRes());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new InferenceProvider({
+      baseUrl: "https://api.groq.com/openai/v1",
+      model: "qwen/qwen3.8-27b",
+      apiKey: "test-key",
+      disableThinking: false,
+    });
+    const resultPromise = provider.analyze(VALID_CHUNK);
+    resultPromise.catch(() => {}); // silence the unhandled-rejection warning while the timer advances below
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await expect(resultPromise).rejects.toThrow(/responded 429/);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
   it("only sends an Authorization header when an API key is configured (Ollama needs none, cloud providers do)", async () => {
     const fetchMock = fakeFetch(openAiResponse(JSON.stringify(VALID_CLASSIFICATION)));
     vi.stubGlobal("fetch", fetchMock);

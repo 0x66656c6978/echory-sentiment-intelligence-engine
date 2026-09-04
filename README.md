@@ -27,6 +27,13 @@ needed, just the API key (~73MB image download, ~5s cold start). See
 [ARCHITECTURE.md](ARCHITECTURE.md) for why, including the measured latency tradeoffs behind that
 choice.
 
+`docker compose up --build` measured end-to-end (both images, fully from scratch, no build cache or
+base images present locally) at **~16s** on this machine (`npm ci`: ~4-6s per service) — the build
+itself isn't the bottleneck. If it takes noticeably longer than that for you, it's almost certainly
+Docker Desktop's own engine/VM starting up (its first launch after a reboot commonly takes 30s-2min
+on its own, independent of anything in this repo), not `npm ci` or the image build — worth checking
+Docker Desktop's own status if `docker compose up` seems stuck.
+
 ### Running the LLM locally instead
 
 If you'd rather not use a cloud API, `backend/.env.example` documents two options, both a
@@ -40,6 +47,21 @@ config-only swap:
 
 A rule-based `LLM_PROVIDER=placeholder` mode is also available if you just want to see the API and
 UI working without any LLM at all.
+
+### Optional: Langfuse tracing
+
+Off by default. To turn it on, get a free account at [cloud.langfuse.com](https://cloud.langfuse.com)
+and set both keys in `backend/.env`:
+
+```
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+```
+
+With both set, every real LLM call is recorded as a `classify-sentiment` generation (model, prompt,
+response, token usage), grouped by `session_id` in Langfuse's Sessions view. Leave either key empty
+(the default) and this is fully inert — no tracing SDK starts, no network calls, no latency cost. See
+[ARCHITECTURE.md](ARCHITECTURE.md#observability) for how it's wired and how it was verified.
 
 ## Testing
 

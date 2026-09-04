@@ -30,6 +30,8 @@ function configFromEnv(env: NodeJS.ProcessEnv): InferenceProviderConfig {
   };
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** Some models wrap output in ```json fences despite instructions -- strip and retry once. */
 function extractJson(raw: string): unknown {
   try {
@@ -111,7 +113,7 @@ export class InferenceProvider implements SentimentProvider {
     };
   }
 
-  private async callOpenAiCompatible(userMessage: string): Promise<CallResult> {
+  private async callOpenAiCompatible(userMessage: string, isRetry = false): Promise<CallResult> {
     const { baseUrl, model, apiKey } = this.config;
     const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
@@ -147,6 +149,28 @@ export class InferenceProvider implements SentimentProvider {
         },
       }),
     });
+
+    // Discovered 2026-09-04 re-verifying Groq latency: this provider had no
+    // handling at all for a 429 -- it just threw, turning a transient
+    // rate-limit into an outright API failure with zero classification
+    // returned. Groq's free tier (7000 input tokens/min at the time of
+    // writing) is tight enough at this prompt's ~980 tokens that even
+    // steady, non-bursty real-time usage (one chunk every few seconds) can
+    // bump into it, not just an artificial benchmark burst. One bounded
+    // retry, honoring the wait Groq itself reports, trades a single request's
+    // latency (a real cost, several seconds -- worse than the 500ms line) for
+    // still returning a correct classification instead of a hard failure.
+    // Retrying indefinitely would make things worse under a sustained
+    // overload, so this retries at most once and then throws as before.
+    if (res.status === 429 && !isRetry) {
+      const body = await res.text();
+      const retryAfterHeader = res.headers.get("retry-after");
+      const parsedFromBody = /try again in ([\d.]+)s/i.exec(body)?.[1];
+      const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : parsedFromBody ? Number(parsedFromBody) : 4;
+      // Capped so a malformed/unexpected header can't stall a request indefinitely.
+      await sleep(Math.min(waitSeconds + 0.5, 10) * 1000);
+      return this.callOpenAiCompatible(userMessage, true);
+    }
 
     if (!res.ok) {
       throw new Error(`InferenceProvider: ${baseUrl}/chat/completions responded ${res.status}: ${await res.text()}`);
