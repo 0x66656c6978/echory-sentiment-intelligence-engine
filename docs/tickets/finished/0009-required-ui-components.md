@@ -87,3 +87,55 @@ a component test would meaningfully strengthen given the time remaining before s
 
 Launchable exactly as already documented in `README.md` (`npm run dev:frontend`) — no new command
 needed, satisfying that DoD item without any change there.
+
+### 2026-09-04 — Superseded by an "Organic" redesign, from an independently-produced mockup
+
+Felix ran a separate Claude session in parallel (per his own stated preference for parallel work via
+multiple sessions rather than in-repo subagents) that produced a full alternative visual direction
+for this same ticket, unaware the dark-console version above had already shipped: a design spec
+(`docs/design/0009-alt-mockup/0009-ui-spec.md`) and a static mockup export
+(`docs/design/0009-alt-mockup/1b-live-console.html`), delivered via a local Downloads folder rather
+than a commit.
+
+**Provenance check before touching anything.** The mockup folder also included a `support.js` Felix
+flagged as "not sure if needed." Identified it as Anthropic's internal Design Canvas runtime
+(dynamic component loading via `eval`/CDN-fetched React+Babel) — unrelated tooling that happened to
+sit in the same export folder, not a dependency of the mockup. Confirmed empirically rather than by
+inspection alone: opened `1b-live-console.html` standalone with `support.js` absent and it rendered
+correctly (it's a self-contained "bundled" export that unpacks its own embedded resources at load).
+Left `support.js` out of the repo.
+
+**This was a genuine fork, not a drop-in tweak** — a full alternate theme (warm cream/terracotta/sage
+vs. the shipped dark tactical console) against a requirement that was already finished, tested, and
+merged. Copied the two handoff files into `docs/design/0009-alt-mockup/` and stopped there to ask
+Felix explicitly whether to keep the shipped design, replace it, or compare both first — given the
+implementation cost (a second full 0009-sized effort) and the deadline. Felix chose to replace it.
+
+**Implementation**: rebuilt the full token system in `frontend/tailwind.config.js` and
+`frontend/src/index.css` from values extracted directly out of the mockup's embedded CSS custom
+properties (colors, radii, shadows, keyframes — not eyeballed from the screenshot), fonts swapped to
+Caprasimo/Figtree (Google Fonts link, no new npm dependency, same approach as before). Every
+component rewritten against the spec: `TrafficLight.tsx` (stacked pill rows instead of stack-light
+lamps), `VolatilityAlert.tsx` (whole-card recolor with a `ringOut` halo instead of a ping dot),
+`MitigationPanel.tsx` (large heading-face suggestion text, plus local-only "Used it"/"Not now"
+buttons — no backend, explicitly documented in the spec as not implying persistence, so the
+component just flips local state), `SentimentStream.tsx` (card-based, bottom-anchored, "reading…"
+pending state), `AcousticBars.tsx` (restyled per the spec's exact bar dimensions/floor). Added
+`AggregateTiles.tsx` (dominant tone + volatility index) — new beyond the four required elements per
+the spec, pure arithmetic over already-returned classifications, no second LLM call. `theme.ts`'s
+existing constraint (literal, non-interpolated Tailwind class names, since the content scanner can't
+see template-interpolated strings) carried over to all the new color lookups.
+
+**Verified live again, same rigor as the first pass**: ran the real negotiation script against the
+real `phi4-mini` backend, confirmed via `get_page_text` (not just screenshots) that every card's
+sentiment/risk/hidden_intent/confidence matched the model's actual response, `VOLATILE` tags appeared
+on the correct chunks, the risk-signal lamp and mitigation panel tracked the latest chunk, "Used
+it" → "Noted" local-state toggle worked, and the two aggregate tiles' arithmetic was hand-verified
+against the actual 9-chunk sentiment distribution (0.33 volatility index = 3/9 flagged; "neutral"
+dominant tone, correctly tie-broken to the first-encountered sentiment at the max count). Checked
+responsive stacking at 1440px and mobile (375px) again.
+
+`npm run typecheck` and `npm run build` (frontend) both pass; backend suite untouched by this change.
+
+Net effect: the four required elements and their live-data behavior are unchanged in substance, only
+the visual system changed. Moving back to `finished/`.

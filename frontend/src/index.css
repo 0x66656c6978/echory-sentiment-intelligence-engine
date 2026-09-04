@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -14,34 +14,21 @@ body,
 
 body {
   margin: 0;
-  background-color: #06090b;
-  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 176, 32, 0.07), transparent 60%),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.012) 0px,
-      rgba(255, 255, 255, 0.012) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-  color: #e2e8f0;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  background-color: #f5ead8;
+  color: #201e1d;
+  font-family: "Figtree", system-ui, sans-serif;
 }
 
 ::-webkit-scrollbar {
   width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f1618;
+  background: #f5ead8;
 }
 ::-webkit-scrollbar-thumb {
-  background: #233234;
-  border: 2px solid #0f1618;
+  background: #dcd3c4;
+  border: 2px solid #f5ead8;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2f4548;
-}
-
-.bg-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 176, 32, 0.15), transparent);
-  background-size: 200% 100%;
+  background: #c0b6a5;
 }

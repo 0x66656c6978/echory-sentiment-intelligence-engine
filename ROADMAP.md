@@ -69,10 +69,12 @@ original strategy record.
   harness), p50 332ms / p95 366ms / 0% over the 500ms failure line across 28 cases; 20
   concurrent requests across 4 sessions confirmed correctly isolated, no cross-session bleed.
 - Polish the 4 required UI components: Traffic Light, Sentiment Stream, Volatility Alert,
-  Mitigation Panel — done (ticket 0009): full rebuild as a "negotiation console" (stack-light risk
-  indicator, terminal-style sentiment stream with acoustic sparklines, pulsing volatility alert,
-  whisper-screen mitigation panel), driven by a scripted 9-chunk call sent live to the real backend,
-  not fixtures. Verified end-to-end against the real `phi4-mini` path.
+  Mitigation Panel — done (ticket 0009), driven by a scripted 9-chunk call sent live to the real
+  backend, not fixtures, and verified end-to-end against the real `phi4-mini` path. Initially built
+  as a dark "negotiation console" (stack-light risk indicator, terminal-style stream); superseded by
+  a warm "Organic" theme (cream/terracotta/sage, card-based stream) ported from an independently
+  produced design spec/mockup — same four elements, same live-data behavior, different visual
+  system. See `docs/design/0009-alt-mockup/` and ticket 0009's log for the full story.
 - `ARCHITECTURE.md`, `SETUP.md`, finalize `AI_COLLABORATION.md` with what actually happened
 - Session summary endpoint (not required for Track A, cheap to add, shows completeness) — only if
   time allows

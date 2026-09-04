@@ -6,14 +6,15 @@ import { SentimentStream } from "./components/SentimentStream";
 import { TrafficLight } from "./components/TrafficLight";
 import { VolatilityAlert } from "./components/VolatilityAlert";
 import { MitigationPanel } from "./components/MitigationPanel";
+import { AggregateTiles } from "./components/AggregateTiles";
 
 type SessionStatus = "standby" | "running" | "complete" | "error";
 
-const STATUS_META: Record<SessionStatus, { label: string; dotClass: string }> = {
-  standby: { label: "STANDBY", dotClass: "bg-slate-600" },
-  running: { label: "LIVE", dotClass: "bg-red-500 animate-blink" },
-  complete: { label: "SESSION COMPLETE", dotClass: "bg-signal-low" },
-  error: { label: "CONNECTION LOST", dotClass: "bg-signal-critical" },
+const STATUS_META: Record<SessionStatus, { label: string; pillClass: string; dotClass: string; breathe: boolean }> = {
+  standby: { label: "Standby", pillClass: "bg-neutral-200 text-neutral-700", dotClass: "bg-neutral-400", breathe: false },
+  running: { label: "Live", pillClass: "bg-accent-200 text-accent-800", dotClass: "bg-accent-600", breathe: true },
+  complete: { label: "Complete", pillClass: "bg-accent2-200 text-accent2-800", dotClass: "bg-accent2-600", breathe: false },
+  error: { label: "Connection lost", pillClass: "bg-accent-300 text-accent-900", dotClass: "bg-accent-700", breathe: false },
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,50 +68,65 @@ export default function App() {
   const currentRiskLevel = latestDone?.response?.risk_level ?? null;
   const volatilityActive = latestDone?.response?.volatility_flag ?? false;
   const mitigationSuggestion = latestDone?.response?.mitigation_suggestion ?? null;
+
+  // Aggregate strip: arithmetic over classifications already returned, no
+  // second LLM call. See AggregateTiles.tsx for the definitions.
+  const doneResponses = entries.filter((entry) => entry.status === "done" && entry.response).map((entry) => entry.response!);
+  const volatilityIndex = doneResponses.length
+    ? doneResponses.filter((response) => response.volatility_flag).length / doneResponses.length
+    : null;
+  const dominantTone = (() => {
+    if (doneResponses.length === 0) return null;
+    const counts = new Map<string, number>();
+    for (const response of doneResponses) counts.set(response.sentiment, (counts.get(response.sentiment) ?? 0) + 1);
+    return [...counts.entries()].reduce((best, current) => (current[1] > best[1] ? current : best))[0];
+  })();
+
   const statusMeta = STATUS_META[sessionStatus];
   const isRunning = sessionStatus === "running";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-line px-6 py-4">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold uppercase tracking-wide text-slate-100">
-              Sentiment Intelligence Engine
-            </h1>
-            <p className="mt-0.5 font-mono text-xs tracking-widest text-slate-500">
-              live negotiation copilot — call monitoring console
-            </p>
-          </div>
+    <div className="flex h-screen flex-col bg-bg">
+      <header className="flex items-center justify-between gap-4 border-b border-ink/[0.16] px-7 py-[18px]">
+        <div className="flex items-baseline gap-3">
+          <h1 className="font-heading text-[22px] text-ink">Copilot</h1>
+          <p className="font-body text-[13px] text-neutral-600">
+            Northwind renewal{sessionIdRef.current ? ` · ${sessionIdRef.current}` : ""}
+          </p>
+        </div>
 
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2 font-mono text-xs tracking-widest">
-              <span className={`h-2 w-2 rounded-full ${statusMeta.dotClass}`} />
-              <span className="text-slate-400">{statusMeta.label}</span>
-              {sessionIdRef.current && sessionStatus !== "standby" && (
-                <span className="text-slate-600">· {sessionIdRef.current}</span>
-              )}
-            </div>
-            <button
-              onClick={runSession}
-              disabled={isRunning}
-              className="border border-amber/60 bg-amber/10 px-4 py-2 font-mono text-xs font-semibold tracking-widest text-amber transition-colors hover:bg-amber/20 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isRunning ? "SESSION IN PROGRESS…" : "INITIATE SIMULATED CALL"}
-            </button>
+        <div className="flex items-center gap-4">
+          <div
+            className={`flex items-center gap-2 rounded-full px-3 py-1.5 font-body text-[11px] font-semibold uppercase tracking-[0.14em] ${statusMeta.pillClass}`}
+          >
+            <span className={`h-2 w-2 rounded-full ${statusMeta.dotClass} ${statusMeta.breathe ? "animate-breathe" : ""}`} />
+            {statusMeta.label}
           </div>
+          {latestDone?.response && (
+            <span className="font-body text-xs text-neutral-600">
+              {latestDone.response.processing_latency_ms} ms · {entries.length} chunks
+            </span>
+          )}
+          <button
+            onClick={runSession}
+            disabled={isRunning}
+            className="rounded-full bg-accent px-4 py-2 font-heading text-xs text-bg transition-colors hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {isRunning ? "Session in progress…" : "Initiate simulated call"}
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-6 lg:flex-row">
-        <div className="min-h-[420px] flex-1 lg:h-[calc(100vh-140px)]">
+      <main className="flex min-h-0 flex-1 flex-col gap-6 p-7 lg:flex-row">
+        <div className="min-h-[420px] flex-1 lg:h-full lg:min-w-0">
           <SentimentStream entries={entries} />
         </div>
 
-        <aside className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
+        <aside className="flex w-full flex-col gap-4 lg:h-full lg:w-[352px] lg:shrink-0">
           <TrafficLight riskLevel={currentRiskLevel} />
           <VolatilityAlert active={volatilityActive} />
           <MitigationPanel suggestion={mitigationSuggestion} />
+          <AggregateTiles volatilityIndex={volatilityIndex} dominantTone={dominantTone} />
         </aside>
       </main>
     </div>

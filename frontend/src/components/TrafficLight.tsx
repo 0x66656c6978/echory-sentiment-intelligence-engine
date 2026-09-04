@@ -1,38 +1,27 @@
 import type { RiskLevel } from "@echory/contract";
-import { RISK_HEX, RISK_LABEL, RISK_ORDER } from "../lib/theme";
+import { RISK_BADGE_CLASS, RISK_DOT_CLASS, RISK_LABEL, RISK_ORDER } from "../lib/theme";
 
-/**
- * Required "Traffic Light Indicator": modeled on a physical industrial stack
- * light (the stacked-lamp towers on factory floors) rather than a literal
- * red/yellow/green traffic signal -- reads at a glance from across a room,
- * which is the point of a stack light and exactly what a negotiator glancing
- * up mid-call needs.
- */
+/** Required "Traffic Light Indicator": four stacked pill rows in descending severity, the current risk_level's row lit. */
 export function TrafficLight({ riskLevel }: { riskLevel: RiskLevel | null }) {
   return (
-    <div className="border border-line bg-panel p-4">
-      <div className="mb-3 font-display text-xs font-semibold tracking-[0.2em] text-slate-500">RISK SIGNAL</div>
-      <div className="flex flex-col items-stretch gap-2.5 border border-line bg-void/70 p-4">
+    <div className="rounded-md bg-surface p-5 shadow-sm">
+      <div className="mb-3 font-body text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-700">
+        Risk signal
+      </div>
+      <div className="flex flex-col gap-[9px]">
         {RISK_ORDER.map((level) => {
           const active = riskLevel === level;
           return (
-            <div key={level} className="flex items-center gap-3">
+            <div
+              key={level}
+              className={`flex items-center gap-3 rounded-full px-[13px] py-[9px] transition-colors duration-300 ${
+                active ? RISK_BADGE_CLASS[level] : "bg-transparent text-neutral-600"
+              }`}
+            >
               <span
-                className={`h-8 w-8 shrink-0 rounded-full border border-black/50 transition-all duration-300 ${
-                  active ? "animate-pulse-glow" : "bg-slate-800"
-                }`}
-                style={{
-                  backgroundColor: active ? RISK_HEX[level] : undefined,
-                  boxShadow: active ? `0 0 18px 5px ${RISK_HEX[level]}66` : "none",
-                }}
+                className={`h-[22px] w-[22px] shrink-0 rounded-full ${active ? `${RISK_DOT_CLASS[level]} animate-soft-pulse` : "bg-neutral-300"}`}
               />
-              <span
-                className={`font-mono text-xs tracking-[0.15em] transition-colors duration-300 ${
-                  active ? "font-semibold text-slate-100" : "text-slate-600"
-                }`}
-              >
-                {RISK_LABEL[level]}
-              </span>
+              <span className="font-body text-[13px] font-semibold uppercase tracking-[0.08em]">{RISK_LABEL[level]}</span>
             </div>
           );
         })}
