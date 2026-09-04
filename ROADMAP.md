@@ -64,7 +64,10 @@ original strategy record.
   Zod-validated and raised as a clear error rather than crashing.
 
 ### Phase 4 — End-to-end verification & performance iteration
-- Latency profiling under the real model; concurrency check (multiple sessions, no state bleed)
+- Latency profiling under the real model; concurrency check (multiple sessions, no state bleed) —
+  done (ticket 0008): real HTTP requests against the deployed server (not the in-process test
+  harness), p50 332ms / p95 366ms / 0% over the 500ms failure line across 28 cases; 20
+  concurrent requests across 4 sessions confirmed correctly isolated, no cross-session bleed.
 - Polish the 4 required UI components: Traffic Light, Sentiment Stream, Volatility Alert,
   Mitigation Panel
 - `ARCHITECTURE.md`, `SETUP.md`, finalize `AI_COLLABORATION.md` with what actually happened

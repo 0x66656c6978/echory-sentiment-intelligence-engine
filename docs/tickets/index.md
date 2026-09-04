@@ -28,7 +28,7 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0005-hardware-latency-probe](finished/0005-hardware-latency-probe.md) | P0 | finished | Phase 3 |
 | [0006-local-llm-benchmark](finished/0006-local-llm-benchmark.md) | P0 | finished | Phase 3 |
 | [0007-inference-provider](finished/0007-inference-provider.md) | P0 | finished | Phase 3 |
-| [0008-latency-concurrency-verification](open/0008-latency-concurrency-verification.md) | P0 | open | Phase 4 |
+| [0008-latency-concurrency-verification](finished/0008-latency-concurrency-verification.md) | P0 | finished | Phase 4 |
 | [0009-required-ui-components](open/0009-required-ui-components.md) | P0 | open | Phase 4 |
 | [0010-architecture-and-submission-docs](open/0010-architecture-and-submission-docs.md) | P0 | open | Phase 4 |
 | [0011-nice-to-haves](open/0011-nice-to-haves.md) | P2 | open | Phase 5 |

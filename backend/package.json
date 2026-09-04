@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "probe:hardware": "tsx scripts/hardware-probe.ts",
-    "benchmark:llm": "tsx scripts/llm-benchmark.ts"
+    "benchmark:llm": "tsx scripts/llm-benchmark.ts",
+    "benchmark:latency": "tsx scripts/latency-benchmark.ts"
   },
   "dependencies": {
     "@echory/contract": "*",
