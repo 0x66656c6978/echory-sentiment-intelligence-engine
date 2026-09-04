@@ -114,10 +114,8 @@ export default function App() {
     <div className="flex h-screen flex-col bg-bg">
       <header className="flex items-center justify-between gap-4 border-b border-ink/[0.16] px-7 py-[18px]">
         <div className="flex items-baseline gap-3">
-          <h1 className="font-heading text-[22px] text-ink">Copilot</h1>
-          <p className="font-body text-[13px] text-neutral-600">
-            Northwind renewal{sessionIdRef.current ? ` · ${sessionIdRef.current}` : ""}
-          </p>
+          <h1 className="font-heading text-[22px] text-ink">Echory | Copilot</h1>
+          {sessionIdRef.current && <p className="font-body text-[13px] text-neutral-600">{sessionIdRef.current}</p>}
         </div>
 
         <div className="flex items-center gap-4">
