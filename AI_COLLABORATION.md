@@ -113,3 +113,22 @@ I went under the assumption that local models would be able to handle the task r
 ### Overfitting prompt
 
 I let claude write the test cases for our model benchmark. After finding the best local candidate I went ahead and tried to let claude improve the accuracy by improving the prompt - leading to us potentially overfitting the current prompt on our test set. I let claude create a new holdout set to validate our prompt changes and it showed my assumptions about overfitting were correct.
+
+### Docker debugging: two bugs I only found by actually testing
+
+Claude made some mistakes with the way environment variables were loaded. The URL to ollama was also wrong since it was running on the docker host, not localhost.
+
+## Effective prompting patterns
+
+- **Asking "how do you actually know that" got real answers.** The clearest example was the model benchmark: Me asking the model how it knows that we're not overfitting the prompt.
+- **Telling it to make the call and defend it, rather than presenting options forever.** This worked well once the tradeoffs were actually laid out - the phi4-mini vs qwen3.8-27b decision was ultimately mine, but claude did the work of finding the failure mode.
+- **Interrupting myself mid-message and correcting course worked better than I expected.** When I said "Let's get rid of the zero-setup fallback" and immediately after said "Actually, no, let's keep it but just change the default" - claude read the correction as replacing the whole instruction, not as an additional task.
+
+## How I validated AI suggestions
+
+- **I insisted on real, running verification over "should work now" repeatedly.** Fixes were confirmed by building, running and doing requests end-to-end. The concurrency-isolation claim was isolated by a real test that fires actual requests. Every latency number quoted anywhere in this repo comes from an actual timed run on my machine.
+- **I asked pointed methodology questions before trusting the result,** not just at the end:
+  - whether the benchmark set and the prompot-improvement target were the same data (they were - that's the overfitting case)
+  - whether a model's first call latency was representative (it wasn't because of cold starts)
+  - whether a shorter prompt would fix Groq's tail latency (it directly tested this and reported that it wouldn't)
+- **The ticket system itself was a validation mechanism, not just documentation.** Every ticket's Definition of Done was written before the work started, and completion required demonstrating that the DoD lines were actually met - which is what surfaced the Vite vulnerability disclosure had been present in a ticket log, but never actually turned into a DoD item.
