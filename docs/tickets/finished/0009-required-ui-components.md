@@ -139,3 +139,32 @@ responsive stacking at 1440px and mobile (375px) again.
 
 Net effect: the four required elements and their live-data behavior are unchanged in substance, only
 the visual system changed. Moving back to `finished/`.
+
+### 2026-09-04 — Reversed the "local-only, no backend" scoping: it does something now
+Felix: the Mitigation Panel "does nearly nothing" and asked for it to be implemented correctly. The
+original scoping (this ticket's log above, and the design spec at
+`docs/design/0009-alt-mockup/0009-ui-spec.md` §5) was deliberate at the time -- explicitly "no
+suggestion-feedback endpoint or persistence" -- but a click that only flips a button label to
+"Noted" and resets on the next chunk with nothing to show for it is a fair complaint for a
+submission being evaluated on UI/UX.
+
+Added a real (though dashboard-only, not part of the mandatory Track A/B contract) endpoint:
+`POST /api/telemetry/session/:session_id/mitigation-feedback`, `{chunk_id, action: "used"|
+"dismissed"}`, persisted against that chunk in `SessionStore`. Kept deliberately out of
+`SessionSummaryResponseSchema` -- that schema is the evaluated Track B contract, and extending it
+for a dashboard-only feature isn't worth any risk to automated evaluation.
+
+Also fixed a real latent bug found while wiring this up: `<MitigationPanel suggestion={...} />` was
+never actually keyed on anything in `App.tsx`, despite `MitigationPanel.tsx`'s own comment claiming
+"Parent keys this component on the suggestion string." It wasn't -- so the `acknowledged` local
+state never reset between suggestions, meaning after one "Used it" click every later suggestion in
+the same session would have rendered as already acknowledged. Fixed by keying on `chunk_id` (needed
+anyway to send feedback against the right chunk).
+
+Verified live end-to-end (real backend, real browser, `get_page_text` not just screenshots): clicked
+"Used it" on chunk 1's suggestion, confirmed the real `POST .../mitigation-feedback` returned 204,
+the panel switched to "✓ Marked as used — logged to this call", and a persistent "✓ suggestion used"
+badge appeared on that chunk's card in the Sentiment Stream. Advanced to chunk 2 and confirmed the
+panel correctly reset to fresh "Used it"/"Not now" buttons for the new suggestion, while chunk 1's
+badge stayed put in the stream. 3 new backend tests (`recordMitigationFeedback` unit tests) plus 3
+route-level integration tests; full 63-test suite and `tsc --noEmit` both clean.
