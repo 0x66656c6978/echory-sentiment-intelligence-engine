@@ -70,6 +70,19 @@ describe("InferenceProvider — default OpenAI-compatible path", () => {
     expect(requestBody.response_format).toMatchObject({ type: "json_schema" });
   });
 
+  it("caps max_tokens on every request (ticket 0019: Groq rejects an uncapped request outright with 429, sized against the model's full context, not the actual short output)", async () => {
+    const fetchMock = fakeFetch(openAiResponse(JSON.stringify(VALID_CLASSIFICATION)));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new InferenceProvider({ baseUrl: "http://localhost:11434/v1", model: "phi4-mini", disableThinking: false }).analyze(
+      VALID_CHUNK,
+    );
+
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody.max_tokens).toBeTypeOf("number");
+    expect(requestBody.max_tokens).toBeGreaterThan(0);
+  });
+
   it("strips markdown code fences before parsing (model ignored the no-fences instruction)", async () => {
     vi.stubGlobal("fetch", fakeFetch(openAiResponse("```json\n" + JSON.stringify(VALID_CLASSIFICATION) + "\n```")));
 

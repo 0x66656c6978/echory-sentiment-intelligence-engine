@@ -9,11 +9,10 @@ synthesized version for review and interview defense.
 
 ```mermaid
 flowchart LR
-    subgraph browser["Browser (native, npm run dev:frontend)"]
-        FE["React dashboard\n(Vite + Tailwind)"]
-    end
+    Browser["Browser"]
 
-    subgraph docker["Docker (docker compose up)"]
+    subgraph docker["Docker (docker compose up -- one command)"]
+        FE["nginx: static dashboard\n(Vite + Tailwind build)"]
         BE["Fastify backend\nTypeScript, strict"]
         Store[("In-memory\nSessionStore")]
         Log[("logs/llm-calls.jsonl")]
@@ -21,23 +20,30 @@ flowchart LR
 
     Cloud["Groq (default)\nqwen/qwen3.8-27b"]
 
-    subgraph host["Host machine (optional swap-in only)"]
-        Ollama["Ollama\n(phi4-mini)"]
+    subgraph optional["Optional local LLM, opt-in only (--profile local-llm)"]
+        OllamaC["ollama service\n(no GPU assumed -- CPU, slow)"]
     end
 
-    FE -- "POST /api/telemetry/stream" --> BE
+    subgraph host["Host machine (optional swap-in, alternative to above)"]
+        OllamaH["Ollama\n(phi4-mini)"]
+    end
+
+    Browser -- "loads dashboard" --> FE
+    Browser -- "POST /api/telemetry/stream" --> BE
     BE -- "default: INFERENCE_BASE_URL/MODEL/API_KEY\n(OpenAI-compatible chat/completions)" --> Cloud
-    BE -. "optional: host.docker.internal:11434\nzero code changes" .-> Ollama
+    BE -. "optional: http://ollama:11434\nzero code changes" .-> OllamaC
+    BE -. "optional: host.docker.internal:11434\nzero code changes" .-> OllamaH
     BE --> Store
     BE --> Log
 ```
 
-**Why this shape:** the backend is the only piece that must be reachable at a fixed contract
-(`POST /api/telemetry/stream` on `localhost:3000`) for automated evaluation, so it's the one
-component fully containerized and locked down (ticket 0012, 0016). The frontend is a native dev
-server — not scoring-relevant per the challenge brief, so containerizing it wasn't worth the time
-(ticket 0009's log). The LLM sits behind one interface (`SentimentProvider`) regardless of where it
-actually runs — Groq by default, needing neither a GPU nor anything installed on the host, per
+**Why this shape:** the backend must be reachable at a fixed contract (`POST /api/telemetry/stream`
+on `localhost:3000`) for automated evaluation, and Echory wants the whole app up from one command
+(ticket 0019) — so both backend and frontend are containerized, `docker compose up` starts both, and
+neither has a supported native path (tickets 0012, 0016, 0019). The frontend builds to static
+assets and is served by nginx, not a dev server. The LLM sits behind one interface
+(`SentimentProvider`) regardless of where it actually runs — Groq by default, needing neither a GPU
+nor anything installed on the host, per
 Pascal's explicit answer (ticket 0018) that Echory's evaluation environment shouldn't be assumed to
 have either.
 
@@ -99,9 +105,12 @@ network has no guarantee of being comparable (`docs/benchmark-results.md` says t
 **Swap-ins, both already wired and documented in `backend/.env.example`, zero code changes for
 either:**
 - `phi4-mini` (local, via Ollama) — the zero-latency-variance alternative, for anyone who'd rather
-  accept a local-install step than Groq's tail-latency risk. Requires `ollama pull phi4-mini` on the
-  host; not containerized (ticket 0017 — Pascal explicitly welcomed this as an *optional* addition,
-  not a requirement, and it wasn't attempted given the deadline).
+  accept the tradeoffs below than Groq's tail-latency risk. Two ways to run it, both documented in
+  `backend/.env.example` (ticket 0019): a host-native Ollama install (`ollama pull phi4-mini`), or
+  the optional containerized `ollama` service (`docker compose --profile local-llm up`) — opt-in
+  only, never started by a plain `docker compose up`, and deliberately requests no GPU (Pascal's
+  explicit ask): measured at 6.3s warm through that path (see Known Limitations below), vs. ~400ms
+  GPU-accelerated on the host-native path.
 - `granite4.1:3b` (local) — a safer accuracy/latency tradeoff than `phi4-mini` if those numbers ever
   need revisiting (70% accuracy, wider latency margin). Swap via `INFERENCE_MODEL` alone.
 
@@ -177,12 +186,14 @@ model selection process, not just the prompt:
 - **Groq's tail latency is a known, accepted risk on the shipped default**, not a limitation that
   slipped through — see [LLM provider choice](#llm-provider-choice-and-why) above for the full
   measurement and why it's shipped anyway per Pascal's explicit instruction.
-- **The local swap-in (`phi4-mini`) requires an install step outside Docker** (`ollama pull`) and
-  isn't containerized — the one path in this project that isn't purely `docker compose up`, by
-  design, since it's optional rather than default (ticket 0017; Pascal explicitly welcomed
-  containerizing it as an optional addition, not required, and it wasn't attempted given the
-  deadline). Doing so would also reintroduce the GPU-passthrough risk Pascal specifically asked us
-  not to assume, so it stays a nice-to-have rather than something to rush in.
+- **The optional local-LLM container (`docker compose --profile local-llm up`) has no GPU
+  acceleration, deliberately** — Pascal's explicit ask not to assume it. Measured directly (ticket
+  0019), not estimated: `phi4-mini` through this container, warm, took **6.3s** — over 15x its
+  GPU-accelerated warm latency (~330-400ms, tickets 0006/0008) for the identical model and prompt,
+  comfortably past the 500ms line. A real, stated tradeoff of opting into this path, not a bug: the
+  default (Groq) exists specifically so nothing depends on this being fast, or even present
+  (ticket 0019). A host-native Ollama install remains the zero-latency-risk
+  local option for anyone with GPU acceleration already configured there.
 - **Vite dev-server vulnerabilities accepted, not fixed**: `npm audit` flags a moderate esbuild
   dev-server CORS advisory and a high-severity Vite `server.fs.deny` bypass on Windows — both
   dev-server-only, not present in a production build, and not reachable outside `localhost`. The
@@ -204,13 +215,23 @@ flagged volatile (a deliberately simpler definition than a risk-weighted mean �
 documented as such in `SessionStore.summarize()`), and `top_risk_moments` is the top 3 by severity,
 ties broken by recency. Returns `404` for an unknown session rather than an empty 200.
 
+## Considered and rejected: racing two concurrent Groq requests
+
+An idea for reducing exposure to the ~14% tail-latency risk: fire two requests to Groq for every
+chunk simultaneously and use whichever returns first, discarding the slower one. Considered,
+**not implemented**. The reasoning against it: this doubles outbound request volume against Groq's
+per-key rate limits for every chunk processed, and Echory's automated evaluation harness's actual
+request volume/rate isn't known in advance. Ticket 0015's benchmarking already hit a token-per-
+minute rate limit once under far lighter load than a real evaluation run would produce, and ticket
+0019 separately found (while dockerizing the frontend) that this account also has a stricter
+output-tokens-per-minute limit than expected. Deliberately doubling request volume against an
+unknown ceiling risks turning an occasional slow response into a burst of hard failures instead —
+a worse outcome than the tail latency it would be trying to avoid. Documented here rather than
+silently dropped or built without being asked to.
+
 ## What would come next with more time
 
-1. Containerize the optional local-Ollama swap-in behind a Compose profile (`docker compose
-   --profile local-llm up`), so choosing it doesn't require a separate host install — Pascal
-   explicitly welcomed this as an addition, just not as a requirement (ticket 0017); not attempted
-   given the deadline.
-2. A persistent session store (Redis) if this ever needed to run as more than one backend instance.
-3. The Vite 8 upgrade, once a Node version bump is acceptable.
-4. A scripted WebSocket streaming demo, purely for a livelier Loom walkthrough — cosmetic, not
+1. A persistent session store (Redis) if this ever needed to run as more than one backend instance.
+2. The Vite 8 upgrade, once a Node version bump is acceptable.
+3. A scripted WebSocket streaming demo, purely for a livelier Loom walkthrough — cosmetic, not
    scoring-relevant, so it stayed last in line (ticket 0011).

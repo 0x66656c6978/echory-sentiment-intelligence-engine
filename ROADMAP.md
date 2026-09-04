@@ -123,13 +123,19 @@ original strategy record.
 - **STT dropped entirely** from scope — not required by the actual API contract.
 - **No exhaustive multi-model shootout** — a scoped shortlist (~3 models) judged against a small
   hand-labeled set, not the open-ended benchmark originally sketched in `AI_COLLABORATION.md`.
-- **Docker-only** (ticket 0016): native `npm start` dropped from the documented setup entirely;
-  `docker compose up` is the one supported way to run the backend.
+- **Docker-only, single command for the whole app** (tickets 0016, 0019): native `npm start`/
+  `npm run dev:frontend` dropped from the documented setup entirely; `docker compose up` alone
+  starts both the backend and the frontend (nginx-served static build).
 - **Groq as the default inference provider** (ticket 0018, superseding ticket 0016's original
   "default to local `phi4-mini`" call): Pascal's explicit answer to the GPU/install-assumption
   question ticket 0017 raised — don't assume GPU passthrough into a container, don't assume any
   install step on Echory's side, default to Groq. `phi4-mini` (local, via Ollama) remains a fully
   supported, documented swap-in with zero latency-variance risk, just not the default anymore.
-  Containerizing Ollama itself was explicitly welcomed by Pascal as an *optional* addition (ticket
-  0017, resolved) — not attempted given the deadline, tracked as a candidate in
-  [ticket 0011](docs/tickets/open/0011-nice-to-haves.md).
+- **Optional containerized Ollama, implemented** (ticket 0019, following ticket 0017's resolution):
+  an `ollama` service behind a Compose profile (`docker compose --profile local-llm up`) — never
+  started by a plain `docker compose up`, and deliberately requests no GPU (Pascal's explicit ask),
+  so it's stated plainly to be meaningfully slower than the GPU-accelerated numbers documented
+  elsewhere in this repo.
+- **Considered and rejected: racing two concurrent Groq requests** to cut tail-latency exposure —
+  Felix's idea, not implemented because it doubles request volume against Groq's per-key rate
+  limits under an unknown evaluation-traffic volume (ticket 0019's log has the full reasoning).

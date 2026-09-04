@@ -39,3 +39,4 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0016-docker-only-default-inference](finished/0016-docker-only-default-inference.md) | P1 | finished | Phase 4 |
 | [0017-containerize-ollama](finished/0017-containerize-ollama.md) | P2 | finished | Phase 4 |
 | [0018-groq-default-per-pascal](finished/0018-groq-default-per-pascal.md) | P0 | finished | Phase 4 |
+| [0019-dockerize-frontend-and-optional-ollama](finished/0019-dockerize-frontend-and-optional-ollama.md) | P0 | finished | Phase 4 |

@@ -82,3 +82,13 @@ excluded from every `git add`/commit in this ticket.
 
 Tickets 0006, 0015, and 0016 each got a short cross-reference log entry pointing here, rather than
 having their own (correct, at-the-time) reasoning rewritten.
+
+### 2026-09-04 — Real reliability bug found in this ticket's shipped default (fixed in ticket 0019)
+While verifying ticket 0019's frontend dockerization end-to-end, every request against the Groq
+default this ticket shipped failed outright with a `429`: `InferenceProvider.callOpenAiCompatible`
+never set `max_tokens`, and Groq's per-minute output-token rate limit rejected the request based on
+the model's full possible output size, not the classification task's actual short response. This
+had been true since ticket 0007 first implemented the OpenAI-compatible call — it just never
+surfaced until this ticket's default (Groq) was exercised against this specific account/key for
+real. Fixed in ticket 0019's log/commit (`max_tokens: 500` added, with a regression test); noted
+here since it directly affects this ticket's "shipped default actually works" claim.

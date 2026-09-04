@@ -20,3 +20,57 @@ services:
         required: false
     environment:
       - PORT=3000
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  # ---- Optional local LLM, ticket 0017/0019 ----
+  # Not started by a plain `docker compose up` -- both services below sit
+  # behind the "local-llm" profile, so they're exactly what Pascal asked for:
+  # an available addition, never a prerequisite to start. Opt in with:
+  #   docker compose --profile local-llm up --build
+  # Then, once `ollama-pull` finishes (check with
+  # `docker compose logs ollama-pull -f`), point the backend at it in
+  # backend/.env: INFERENCE_BASE_URL=http://ollama:11434/v1,
+  # INFERENCE_MODEL=phi4-mini, and restart the backend service.
+  #
+  # No GPU is requested or assumed here on purpose (Pascal's explicit ask --
+  # don't assume GPU acceleration in the container). Measured directly
+  # (ticket 0019), not estimated: phi4-mini through this container, warm,
+  # took 6.3s -- over 15x its ~330-400ms GPU-accelerated warm latency on the
+  # host-native path (docs/benchmark-results.md, ARCHITECTURE.md),
+  # comfortably missing the 500ms line. This is a real, stated tradeoff of
+  # the optional path, not a bug -- the default (Groq) exists specifically
+  # so nothing depends on this being fast, or even present.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-llm"]
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    profiles: ["local-llm"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull phi4-mini"]
+
+volumes:
+  # Persists pulled models across container recreation -- without this,
+  # `ollama-pull`'s ~2.5GB download would repeat every time the container
+  # is rebuilt or recreated, not just on first use.
+  ollama_data:

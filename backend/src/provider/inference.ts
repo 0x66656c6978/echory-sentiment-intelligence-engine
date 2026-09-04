@@ -126,6 +126,17 @@ export class InferenceProvider implements SentimentProvider {
           { role: "user", content: userMessage },
         ],
         temperature: 0.2,
+        // Discovered the hard way (ticket 0019): with no max_tokens, some
+        // providers (Groq specifically) size their per-minute output-token
+        // rate limit check against the model's full remaining context as the
+        // worst-case output, not the classification's actual few-hundred-
+        // token output -- a real request was rejected outright with 429
+        // "Request too large... Requested 1299" purely because nothing capped
+        // the requested max. The real response is a small fixed-shape JSON
+        // object (hidden_intent <=60 chars, mitigation_suggestion <=120
+        // chars, a handful of other short fields) -- 500 is generous
+        // headroom, not a tight fit.
+        max_tokens: 500,
         // Required even for non-reasoning models -- ticket 0007 found phi4-mini
         // wraps JSON in markdown fences and granite4.1:3b drops risk_level
         // entirely under plain prompting alone. Different shape than Ollama
