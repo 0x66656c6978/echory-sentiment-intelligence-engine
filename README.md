@@ -3,10 +3,11 @@
 Real-time sentiment/nuance analysis engine for a simulated AI negotiation copilot, built for
 Echory's Senior Full-Stack Engineer technical assessment (Track A — Full Stack).
 
-**Status:** Phases 1-3 done (backend, frontend, Docker, tests, LLM observability, real LLM
-inference wired up and swappable to any OpenAI-compatible endpoint). Latency/concurrency
-verification and UI polish (tickets 0008-0009) are next. See [ROADMAP.md](ROADMAP.md) for the
-phase plan and [docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
+**Status:** Phases 1-4 done (backend, frontend, Docker, tests, LLM observability, real LLM
+inference wired up and swappable to any OpenAI-compatible endpoint, latency/concurrency verified
+end-to-end, full UI polish pass). `ARCHITECTURE.md`/`AI_COLLABORATION.md` finalization and
+submission docs (ticket 0010) are next. See [ROADMAP.md](ROADMAP.md) for the phase plan and
+[docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
 
 - Original challenge brief: [docs/CHALLENGE.md](docs/CHALLENGE.md)
 - AI collaboration strategy: [AI_COLLABORATION.md](AI_COLLABORATION.md)
@@ -41,6 +42,11 @@ point at Ollama's local OpenAI-compatible endpoint with `phi4-mini`). See
 `backend/.env.example` for the full set of options — including swapping to a cloud provider like
 Groq via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone, no code changes — and
 [docs/benchmark-results.md](docs/benchmark-results.md) for why `phi4-mini` was chosen.
+
+Once both are running, click **"INITIATE SIMULATED CALL"** on the dashboard — it streams a scripted
+9-chunk negotiation call to the real backend one chunk at a time (not fixture data) and the Traffic
+Light / Sentiment Stream / Volatility Alert / Mitigation Panel all update live as each response
+lands.
 
 ### Docker (backend only — frontend runs natively for now)
 
