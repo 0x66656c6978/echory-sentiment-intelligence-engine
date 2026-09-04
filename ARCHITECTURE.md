@@ -156,6 +156,28 @@ two things working together:
    [ticket 0009's log](docs/tickets/finished/0009-required-ui-components.md) — so it's not a
    theoretical concern; the same class of bug showed up twice.)
 
+## Observability
+
+Every real LLM call (i.e. not the rule-based placeholder) logs `chunk_id`, `session_id`,
+provider/model, latency, prompt, raw response, parsed result, and token counts to
+`backend/logs/llm-calls.jsonl` — this is what tickets 0006/0015's model benchmarks read to compute
+per-model latency stats, not a write-only log nobody looks at.
+
+**Optional**: the same call is also recorded as a Langfuse generation, off by default and enabled
+only when `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` are both set — with no keys, the OpenTelemetry
+pipeline is never started and this is fully inert (verified directly: a request against a container
+with no Langfuse keys behaves identically to one with the observability code deleted). Never awaited
+before the response is sent, and never allowed to surface as a failure to the caller — observability
+must not add latency or become a new way for the API to break. Implemented against Langfuse's current
+OpenTelemetry-based SDK (`@langfuse/tracing`/`@langfuse/otel`, not the older `Langfuse` client class),
+and verified by fetching the actual recorded trace back via the Langfuse API/CLI and checking it
+against Langfuse's own "what does a good trace look like" guidance — not just assumed to work because
+the code compiled. That check caught two real gaps before they shipped: the observation's own
+recorded latency was 0 (spans were being created after the call had already finished, so start/end
+had to be explicitly backdated to the real call's timing) and the input was cluttered with the full
+system prompt repeated identically on every trace (moved to metadata, leaving `input` as just the
+transcript being classified).
+
 ## Detecting sarcasm and hidden intent
 
 This is the highest-weighted scored dimension (30%), so it drove both the prompt design and the

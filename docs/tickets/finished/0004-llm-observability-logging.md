@@ -51,3 +51,46 @@ grouping/aggregation/empty-input, and two route-level integration tests confirmi
 returns `observability` gets logged with all fields intact (model, prompt, raw response, token
 counts) while the placeholder provider produces zero log entries for the same request shape.
 `npx tsc --noEmit` clean under strict mode after the interface change.
+
+### 2026-09-04 — Stretch goal: Langfuse tracing (for the Loom demo)
+Revisited the Langfuse stretch this DoD explicitly deferred. Off by default: enabled only when
+`LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` are both set, so an evaluator without a Langfuse account
+sees zero behavior or latency difference (verified — no keys means no OpenTelemetry SDK ever starts).
+
+False start caught before it shipped: `npm view langfuse version` installed the legacy `Langfuse`
+class (v3, `.generation()`/`.trace()`), which is the pattern this LLM would produce from memory. The
+Langfuse Agent Skill (`github.com/langfuse/skills`) explicitly warns against implementing from
+memory and mandates fetching current docs first — doing so showed the current recommended SDK is
+OpenTelemetry-based (`@langfuse/tracing` + `@langfuse/otel` + `@opentelemetry/sdk-node`), not the
+`Langfuse` class. Swapped packages before writing any real code against the wrong API.
+
+Hit the same class of module-load-ordering bug as ticket 0007's `.env` discovery: `index.ts` imports
+`app.ts` (which transitively imports `langfuse.ts`) before calling `loadDotEnv()`, so an eagerly
+computed `export const langfuseEnabled = computeLangfuseEnabled()` at module scope would have
+permanently baked in `false` even with real keys on disk. Fixed by making it a mutable `let`,
+defaulting to `false` and only ever set by `initLangfuse()`, called explicitly right after
+`loadDotEnv()` in `index.ts`.
+
+The skill also mandates *running* the integration for real and self-auditing the actual trace
+against Langfuse's own best-practices doc rather than trusting the SDK docs alone. Did exactly that
+against the real Docker container and Langfuse Cloud (via `langfuse-cli`), and it caught two real
+gaps unit tests couldn't have (mocks don't validate real timing/naming semantics):
+- The recorded trace showed `latency: 0` — the observation was created and ended *after*
+  `provider.analyze()` had already fully completed, so its own span duration was near-instant
+  rather than reflecting the real LLM call. Fixed by threading real `Date` objects (`startTime`
+  captured before the call, `endTime` after) from `telemetry.ts` through to `startObservation(...,
+  { startTime })` and `.end(endTime)`. Re-fetched the trace: `latency: 0.445` matched the API
+  response's real `processing_latency_ms: 445` exactly.
+- The observation name (`sentiment-classification`) was noun-first, and `input` embedded the full
+  system prompt repeated identically on every call — both against the fetched best-practices doc's
+  explicit guidance. Renamed to verb-first `classify-sentiment` (used as both the observation name
+  and the propagated `traceName`), and moved the system prompt out of `input` into
+  `metadata.system_prompt`, leaving `input` as just the transcript being classified. Re-fetched and
+  confirmed both fixes on a second real trace.
+
+Fire-and-forget from `telemetry.ts` (`void logToLangfuse(...).catch(...)`), never awaited before the
+response is sent and never allowed to surface as a caller-visible failure — observability must not
+become a new way for the API to break. 7 new tests in `backend/src/observability/langfuse.test.ts`
+(mocking `@langfuse/tracing`/`@opentelemetry/sdk-node`/`@langfuse/otel`, with `vi.resetModules()` +
+a dynamic import per test since `sdk` is a genuine module-level singleton). Documented in
+`ARCHITECTURE.md`'s new "Observability" section.

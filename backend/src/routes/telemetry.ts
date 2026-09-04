@@ -3,6 +3,7 @@ import { TelemetryChunkRequestSchema, API_TELEMETRY_STREAM_PATH, type TelemetryC
 import type { SentimentProvider } from "@echory/contract";
 import { sessionStore } from "../session/store.js";
 import { logLLMCall } from "../observability/llmLogger.js";
+import { logToLangfuse } from "../observability/langfuse.js";
 
 export async function telemetryRoutes(app: FastifyInstance, provider: SentimentProvider): Promise<void> {
   app.post(API_TELEMETRY_STREAM_PATH, async (request, reply) => {
@@ -12,9 +13,10 @@ export async function telemetryRoutes(app: FastifyInstance, provider: SentimentP
     }
 
     const chunk = parsed.data;
-    const start = Date.now();
+    const startTime = new Date();
     const { classification, observability } = await provider.analyze(chunk);
-    const processingLatencyMs = Date.now() - start;
+    const endTime = new Date();
+    const processingLatencyMs = endTime.getTime() - startTime.getTime();
 
     const response: TelemetryChunkResponse = {
       chunk_id: chunk.chunk_id,
@@ -40,6 +42,22 @@ export async function telemetryRoutes(app: FastifyInstance, provider: SentimentP
         parsed_result: classification,
         token_counts: observability.tokenCounts,
       });
+
+      // Fire-and-forget: optional (off by default, see langfuse.ts), and
+      // observability must never add latency to the measured response --
+      // never awaited before replying, and never allowed to surface as an
+      // unhandled rejection or a failure visible to the caller.
+      void logToLangfuse({
+        chunk_id: chunk.chunk_id,
+        session_id: chunk.session_id,
+        provider: provider.name,
+        model: observability.model ?? "unknown",
+        prompt: observability.prompt ?? "",
+        rawResponse: observability.rawResponse ?? "",
+        tokenCounts: observability.tokenCounts,
+        startTime,
+        endTime,
+      }).catch((err) => request.log.warn({ err }, "Langfuse logging failed"));
     }
 
     return reply.send(response);
