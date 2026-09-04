@@ -3,10 +3,10 @@
 Real-time sentiment/nuance analysis engine for a simulated AI negotiation copilot, built for
 Echory's Senior Full-Stack Engineer technical assessment (Track A — Full Stack).
 
-**Status:** Phases 1-2 done (backend, frontend, Docker, tests, LLM observability). The local LLM
-has been selected (`phi4-mini`, see below) — wiring it into the real inference call (ticket 0007)
-is next. See [ROADMAP.md](ROADMAP.md) for the phase plan and
-[docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
+**Status:** Phases 1-3 done (backend, frontend, Docker, tests, LLM observability, real LLM
+inference wired up and swappable to any OpenAI-compatible endpoint). Latency/concurrency
+verification and UI polish (tickets 0008-0009) are next. See [ROADMAP.md](ROADMAP.md) for the
+phase plan and [docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
 
 - Original challenge brief: [docs/CHALLENGE.md](docs/CHALLENGE.md)
 - AI collaboration strategy: [AI_COLLABORATION.md](AI_COLLABORATION.md)
@@ -25,6 +25,19 @@ cp backend/.env.example backend/.env
 npm start            # backend on http://localhost:3000
 npm run dev:frontend # dashboard on http://localhost:5173
 ```
+
+By default the backend runs the rule-based placeholder classifier (`LLM_PROVIDER=placeholder`),
+no setup needed. To use the real local LLM instead:
+
+```bash
+ollama pull phi4-mini   # ~2.5GB, one-time
+```
+
+Then set `LLM_PROVIDER=inference` in `backend/.env` (the rest of the `INFERENCE_*` defaults already
+point at Ollama's local OpenAI-compatible endpoint with `phi4-mini`). See
+`backend/.env.example` for the full set of options — including swapping to a cloud provider like
+Groq via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone, no code changes — and
+[docs/benchmark-results.md](docs/benchmark-results.md) for why `phi4-mini` was chosen.
 
 ### Docker (backend only — frontend runs natively for now)
 

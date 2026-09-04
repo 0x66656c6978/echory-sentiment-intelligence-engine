@@ -57,6 +57,11 @@ original strategy record.
 - Stronger model (cloud, e.g. Gemini Flash or Groq Llama-70B) as LLM-judge; results stored in-repo
 - Pick primary local model; confirm cloud fallback model for the provider switch
 - Prompt and model are coupled — expect to revisit prompt after model choice and vice versa
+- `InferenceProvider` implemented for real (ticket 0007): default path is a real OpenAI-compatible
+  HTTP call (works unmodified against local Ollama or a real external endpoint — verified against
+  Groq with zero code changes, satisfying Pascal's explicit ask), with `INFERENCE_DISABLE_THINKING`
+  as a verified-but-unused opt-in for a local reasoning model. Malformed/non-JSON model output is
+  Zod-validated and raised as a clear error rather than crashing.
 
 ### Phase 4 — End-to-end verification & performance iteration
 - Latency profiling under the real model; concurrency check (multiple sessions, no state bleed)

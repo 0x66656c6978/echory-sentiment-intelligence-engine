@@ -27,7 +27,7 @@
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { TelemetryChunkResponseSchema } from "@echory/contract";
+import { SentimentClassificationSchema } from "@echory/contract";
 import {
   SENTIMENT_CLASSIFICATION_SYSTEM_PROMPT,
   SENTIMENT_CLASSIFICATION_JSON_SCHEMA,
@@ -124,7 +124,10 @@ if (!JUDGE_API_KEY) {
   throw new Error("JUDGE_API_KEY is not set -- add it to backend/.env (see .env.example)");
 }
 
-const ClassificationSchema = TelemetryChunkResponseSchema.omit({ chunk_id: true, processing_latency_ms: true });
+// Reuses the same schema ticket 0007's InferenceProvider validates against
+// (backend/src/provider/inference.ts) -- benchmarked and shipped output must
+// be checked identically, not by two independently-maintained schemas.
+const ClassificationSchema = SentimentClassificationSchema;
 type Classification = z.infer<typeof ClassificationSchema>;
 
 const JudgeResponseSchema = z.object({

@@ -126,15 +126,15 @@ describe("POST /api/telemetry/stream — error response normalization (ticket 00
 });
 
 describe("POST /api/telemetry/stream — genuine server errors stay distinct", () => {
-  const originalProvider = process.env.LLM_PROVIDER;
-
-  afterEach(() => {
-    process.env.LLM_PROVIDER = originalProvider;
-  });
+  class ThrowingProvider implements SentimentProvider {
+    readonly name = "inference";
+    async analyze(): Promise<SentimentAnalysisResult> {
+      throw new Error("simulated provider failure (e.g. malformed model output or a network error)");
+    }
+  }
 
   it("returns 500 { error: internal_error } when the provider throws, not the 400 shape", async () => {
-    process.env.LLM_PROVIDER = "inference"; // not implemented yet -- throws by design
-    const app = await buildApp();
+    const app = await buildApp(new ThrowingProvider());
     const response = await app.inject({
       method: "POST",
       url: "/api/telemetry/stream",

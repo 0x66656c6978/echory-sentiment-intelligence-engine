@@ -117,3 +117,72 @@ format: {type: "json_schema", json_schema: {name, schema}}` shape (different fie
 than Ollama native's `format`), both produce clean, complete JSON. Added as an explicit DoD
 requirement rather than leaving it implicit. `backend/.env.example` updated with `phi4-mini` as
 the default `INFERENCE_MODEL` and `granite4.1:3b` documented as the swap-in alternative.
+
+### 2026-09-04 — Implemented for real; all DoD items verified
+
+Implemented `InferenceProvider.analyze()` in `backend/src/provider/inference.ts`:
+- Default path: real HTTP call to `${INFERENCE_BASE_URL}/chat/completions` (OpenAI-compatible),
+  always including `response_format: {type: "json_schema", ...}` per the requirement confirmed
+  above. Auth header is only sent when `INFERENCE_API_KEY` is set (Ollama needs none; cloud
+  providers do) — config is a plain object (`InferenceProviderConfig`), constructor defaults to
+  reading env vars but accepts an explicit config for tests, so no env-var mutation is needed to
+  test different provider configurations.
+- Model output is parsed with a fences-stripping fallback (same approach as ticket 0006/0015's
+  benchmark script), then validated against a new `SentimentClassificationSchema` exported from
+  `@echory/contract` (added so production and `backend/scripts/llm-benchmark.ts` validate against
+  the exact same schema instead of two independently-maintained copies — refactored the benchmark
+  script to import it too). Invalid JSON or a failed schema check throws a descriptive `Error`
+  (e.g. naming the exact missing/invalid field) rather than letting `JSON.parse` or Zod's own error
+  propagate raw — caught by the existing global Fastify error handler (ticket 0013) and normalized
+  to `500 {error: "internal_error"}`, same as any other unexpected failure. This satisfies "clear
+  error rather than an unhandled exception" — Fastify was always going to return 500 for a thrown
+  error either way; what changed is the message is now specific enough to debug from logs alone.
+- `INFERENCE_DISABLE_THINKING=true` path: same class, routes to Ollama's native `/api/chat` with
+  `think:false` and the native `format` field, deriving the native base URL from
+  `INFERENCE_BASE_URL` by stripping a trailing `/v1` (one env var to document, not two).
+
+**Found and fixed a real gap while implementing this**: nothing in `backend/src` ever loaded
+`backend/.env` — `npm start` (`tsx src/index.ts` directly) only sees real process env vars.
+`backend/.env` "worked" so far only because the placeholder provider needs no config at all; this
+ticket is the first one where a missing `INFERENCE_API_KEY`/`INFERENCE_MODEL` would silently break
+things for anyone following the documented `cp backend/.env.example backend/.env` step. Added
+`backend/src/env.ts` (the same minimal loader already used by `scripts/llm-benchmark.ts`, no new
+dependency) and call it at the top of `backend/src/index.ts`, before anything reads `process.env`.
+Does not affect Docker — `docker-compose.yml` already injects env vars directly via `env_file`,
+bypassing this entirely, and `.dockerignore` already excludes `.env` from the build context.
+
+**Fixed a test that would have silently gone stale**: `app.test.ts` had a test asserting `500` when
+`LLM_PROVIDER=inference` because the old stub always threw "not implemented". That test would now
+either hit a real (unmocked) network call in CI or fail for the wrong reason. Replaced it with a
+dedicated `ThrowingProvider` test double injected via `buildApp`'s existing `overrideProvider` param
+— same assertion (provider throws → 500, not 400), no longer coupled to `InferenceProvider`'s
+internals. Added a new `backend/src/provider/inference.test.ts` (8 tests, `vi.stubGlobal("fetch",
+...)` — first use of fetch-mocking in this codebase) covering: happy path with `response_format`
+asserted in the request body, markdown-fence stripping, non-JSON output, missing-field schema
+failure, non-2xx HTTP response, conditional `Authorization` header, base-URL swappability, and the
+`INFERENCE_DISABLE_THINKING` path's native-URL derivation. Full suite: 39/39 passing
+(`npm test` in `backend/`).
+
+**Live verification against real endpoints** (all three DoD-required checks, run manually against
+real services, not mocked — script written, run, and discarded per the ticket-0015 precedent for
+one-off diagnostics):
+1. Local Ollama, `phi4-mini`, default path: succeeded, clean classification, no code changes from
+   what ships. (6.8s latency on this run — a cold model load, not a regression; ticket 0006's
+   actual warmed benchmark numbers, 408ms avg, are what's used for the phi4-mini decision. Warmed
+   latency under real concurrency is ticket 0008's job, not this one's.)
+2. **Real external endpoint swap, Groq (`qwen/qwen3.8-27b`), same code, only `INFERENCE_BASE_URL`
+   /`INFERENCE_MODEL`/`INFERENCE_API_KEY` changed**: succeeded, 472ms, clean classification —
+   confirms Pascal's explicit ask is genuinely satisfied, not just architecturally plausible.
+3. `INFERENCE_DISABLE_THINKING=true` against a real local reasoning model (`qwen3:8b`, already
+   pulled locally from earlier benchmarking): succeeded, clean JSON with no leaked `<think>`
+   content, confirming the native-API escape hatch actually works. Not exercised in production
+   (phi4-mini is non-reasoning) but no longer just theoretical.
+
+`.env.example` updated with a full `INFERENCE_DISABLE_THINKING` block (default `false`, explains
+exactly when to flip it and why, references the ticket 0005 finding). `README.md` updated with the
+`ollama pull phi4-mini` step and how to switch `LLM_PROVIDER=inference` — this was the DoD's
+"document the pull step" item and was previously missing entirely (Setup section only covered the
+placeholder-mode default). `ROADMAP.md`'s Phase 3 section and `docs/tickets/index.md` updated to
+reflect completion.
+
+All DoD items are now satisfied. Moving to `finished/`.

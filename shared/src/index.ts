@@ -92,6 +92,10 @@ export type SessionSummaryResponse = z.infer<typeof SessionSummaryResponseSchema
 
 // ─── LLM provider seam (Phase 3 implements local + cloud against this) ──────
 
+export const SentimentClassificationSchema = TelemetryChunkResponseSchema.omit({
+  chunk_id: true,
+  processing_latency_ms: true,
+});
 export type SentimentClassification = Omit<TelemetryChunkResponse, "chunk_id" | "processing_latency_ms">;
 
 /**
