@@ -6,6 +6,15 @@ services:
     ports:
       - "3000:3000"
     env_file:
+      # .env.example provides the zero-setup placeholder-mode baseline
+      # (satisfies ticket 0012's "docker compose up works with no setup"
+      # requirement even on a fresh clone). backend/.env layers on top when
+      # present and overrides matching keys -- `required: false` means
+      # Compose doesn't error when it's absent. This makes Docker honor the
+      # same backend/.env a developer already created for the native
+      # `npm start` path, instead of silently ignoring it.
       - backend/.env.example
+      - path: backend/.env
+        required: false
     environment:
       - PORT=3000

@@ -67,3 +67,35 @@ Measured on Felix's dev machine (Windows 11 Pro, Docker Desktop/WSL2 backend); a
 Echory's side will vary with their network speed, but the image itself is small (Alpine base +
 pure-JS deps, no native compilation) so this should stay fast on most connections. Full numbers
 will go into README/SETUP.md via ticket 0010.
+
+### 2026-09-04 — Fixed: `docker compose up` silently ignored `backend/.env`
+
+Felix tried testing `LLM_PROVIDER=inference` via Docker after editing `backend/.env`, and the
+container kept running `placeholder` regardless. Root cause: `docker-compose.yml`'s `env_file`
+pointed only at `backend/.env.example` (this ticket's original, correct call at the time — the
+zero-setup DoD requirement above, written before ticket 0007's real inference path existed) and
+never read `backend/.env` at all, so no edit to it could ever reach the container.
+
+Fixed by layering both files: `env_file: [backend/.env.example, path: backend/.env, required:
+false]` (Compose Specification long-form, confirmed supported — installed Compose is v5.5.0).
+`.env.example` still provides the zero-setup baseline on a fresh clone (satisfies this ticket's
+original DoD, `required: false` means Compose doesn't error when `backend/.env` doesn't exist yet),
+and `backend/.env` now overrides it when present — Docker finally honors the same file the native
+`npm start` path already does.
+
+Fixing that surfaced a second, separate issue: with `LLM_PROVIDER=inference` actually taking effect,
+the request failed with `ECONNREFUSED` — `INFERENCE_BASE_URL=http://localhost:11434/v1` doesn't
+reach the host's Ollama from inside the container (`localhost` there means the container itself).
+Not a bug in the app (the 500 + clear error is exactly ticket 0007's designed failure mode) — a
+standard Docker networking fact. Fixed by pointing `backend/.env` at
+`http://host.docker.internal:11434/v1` instead (Docker Desktop resolves this to the host on
+Windows/Mac with no extra config). Documented in `backend/.env.example` and `README.md`, including
+the one caveat this creates: `backend/.env` is now read by both the native and Docker paths, but the
+correct host differs between them, so switching between the two means switching this one line.
+
+Verified end-to-end for real, not just config review: recreated the container
+(`docker compose up -d`), confirmed the startup log now says `Sentiment provider: inference`, sent a
+real request that failed with the exact predicted `ECONNREFUSED` before the host-address fix, then
+sent it again after the fix and got a genuine `phi4-mini` classification back (3.2s cold model
+load on the first call, 514ms on the second, consistent with the cold/warm pattern from tickets
+0006-0008).

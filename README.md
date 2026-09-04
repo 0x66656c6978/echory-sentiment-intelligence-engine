@@ -56,9 +56,13 @@ docker compose up --build
 
 Runs the backend on `http://localhost:3000` using `backend/.env.example` defaults (placeholder
 mode, no API keys needed; ~73MB download, ~5s cold start — see
-[ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for the measurement). The frontend
-exists (`npm run dev:frontend`) but isn't containerized yet — not currently planned, since the
-evaluation harness only needs the backend reachable.
+[ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for the measurement). If
+`backend/.env` exists, it's layered on top and overrides those defaults — so `LLM_PROVIDER=inference`
+works via Docker too, no separate config needed. One Docker-specific gotcha: if `INFERENCE_BASE_URL`
+points at a local Ollama, use `http://host.docker.internal:11434/v1` instead of `localhost` —
+`localhost` inside the container refers to the container itself, not your machine (see the comment
+in `backend/.env.example`). The frontend exists (`npm run dev:frontend`) but isn't containerized yet
+— not currently planned, since the evaluation harness only needs the backend reachable.
 
 ### Testing
 
