@@ -108,3 +108,8 @@ I should have defined the format for the tickets more initially - having a secti
 ### Model benchmarking
 
 Claude did not consider that models need to warm up for the benchmark so the numbers for the first call would always be inflated. It understood this for the hardware-probe but not the benchmark-test itself.
+I went under the assumption that local models would be able to handle the task reasonably well. Research shows there's a quality difference of about 15-20% between gpt-oss-20b and phi4-mini. Latency constraints don't allow us to use the free-tier of Groq since the queue times send us over the 500ms limit ~14% of the time which doesn't seem acceptable.
+
+### Overfitting prompt
+
+I let claude write the test cases for our model benchmark. After finding the best local candidate I went ahead and tried to let claude improve the accuracy by improving the prompt - leading to us potentially overfitting the current prompt on our test set. I let claude create a new holdout set to validate our prompt changes and it showed my assumptions about overfitting were correct.
