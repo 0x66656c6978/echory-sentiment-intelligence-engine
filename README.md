@@ -21,48 +21,50 @@ submission docs (ticket 0010) are next. See [ROADMAP.md](ROADMAP.md) for the pha
 
 ## Setup
 
-### Native (matches the evaluation harness in docs/CHALLENGE.md)
+**Docker-only, by design (ticket 0016)** — per Pascal's explicit preference for Docker (his email,
+2026-09-03), the backend has no supported native `npm start` path anymore; it always runs in a
+container. The one external prerequisite Docker can't provide itself is Ollama (see the note below).
+
+### Backend
 
 ```bash
-npm install
-cp backend/.env.example backend/.env
-npm start            # backend on http://localhost:3000
-npm run dev:frontend # dashboard on http://localhost:5173
-```
-
-By default the backend runs the rule-based placeholder classifier (`LLM_PROVIDER=placeholder`),
-no setup needed. To use the real local LLM instead:
-
-```bash
-ollama pull phi4-mini   # ~2.5GB, one-time
-```
-
-Then set `LLM_PROVIDER=inference` in `backend/.env` (the rest of the `INFERENCE_*` defaults already
-point at Ollama's local OpenAI-compatible endpoint with `phi4-mini`). See
-`backend/.env.example` for the full set of options — including swapping to a cloud provider like
-Groq via `INFERENCE_BASE_URL`/`INFERENCE_MODEL`/`INFERENCE_API_KEY` alone, no code changes — and
-[docs/benchmark-results.md](docs/benchmark-results.md) for why `phi4-mini` was chosen.
-
-Once both are running, click **"INITIATE SIMULATED CALL"** on the dashboard — it streams a scripted
-9-chunk negotiation call to the real backend one chunk at a time (not fixture data) and the Traffic
-Light / Sentiment Stream / Volatility Alert / Mitigation Panel all update live as each response
-lands.
-
-### Docker (backend only — frontend runs natively for now)
-
-```bash
+ollama pull phi4-mini   # ~2.5GB, one-time -- see the prerequisite note below
 docker compose up --build
 ```
 
-Runs the backend on `http://localhost:3000` using `backend/.env.example` defaults (placeholder
-mode, no API keys needed; ~73MB download, ~5s cold start — see
-[ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for the measurement). If
-`backend/.env` exists, it's layered on top and overrides those defaults — so `LLM_PROVIDER=inference`
-works via Docker too, no separate config needed. One Docker-specific gotcha: if `INFERENCE_BASE_URL`
-points at a local Ollama, use `http://host.docker.internal:11434/v1` instead of `localhost` —
-`localhost` inside the container refers to the container itself, not your machine (see the comment
-in `backend/.env.example`). The frontend exists (`npm run dev:frontend`) but isn't containerized yet
-— not currently planned, since the evaluation harness only needs the backend reachable.
+Runs the backend on `http://localhost:3000` with **the real local LLM (`phi4-mini`) as the default**
+— `docker compose up` alone, no `.env` file needed, exercises the actual thing being evaluated, not
+a rule-based stand-in (~73MB image download, ~5s cold start — see
+[ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for the measurement; the LLM's own
+cold-start model load adds a few more seconds on the very first request).
+
+**Prerequisite**: Ollama must be installed and running natively on the host with `phi4-mini` pulled
+(`ollama pull phi4-mini`) — it is **not yet containerized** (open question, see
+[ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md), blocked on confirming GPU
+passthrough is workable on Echory's side). Without Ollama running, requests fail with a clear
+`500` (ticket 0007's designed failure mode, not a crash) rather than silently falling back.
+
+**If Ollama has trouble on your side**, switching to a cloud provider needs zero code changes — edit
+`backend/.env` (falls back to `.env.example`'s defaults if this file doesn't exist; create it with
+`cp backend/.env.example backend/.env` first) and replace the three `INFERENCE_*` lines with the
+Groq block already commented in that file, then `docker compose up -d` to pick it up. See
+`backend/.env.example` for the full set of options — including the rule-based `LLM_PROVIDER=placeholder`
+fallback if you'd rather not install Ollama or hold an API key at all — and
+[docs/benchmark-results.md](docs/benchmark-results.md) for why `phi4-mini` was chosen over Groq by
+default despite Groq's own accuracy edge.
+
+### Frontend
+
+```bash
+npm install
+npm run dev:frontend # dashboard on http://localhost:5173
+```
+
+Not containerized (not currently planned — the evaluation harness only needs the backend reachable).
+Once the backend is running, click **"INITIATE SIMULATED CALL"** on the dashboard — it streams a
+scripted 9-chunk negotiation call to the real backend one chunk at a time (not fixture data) and the
+Traffic Light / Sentiment Stream / Volatility Alert / Mitigation Panel all update live as each
+response lands.
 
 ### Testing
 

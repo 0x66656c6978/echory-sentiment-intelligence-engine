@@ -6,13 +6,16 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      # .env.example provides the zero-setup placeholder-mode baseline
-      # (satisfies ticket 0012's "docker compose up works with no setup"
-      # requirement even on a fresh clone). backend/.env layers on top when
-      # present and overrides matching keys -- `required: false` means
-      # Compose doesn't error when it's absent. This makes Docker honor the
-      # same backend/.env a developer already created for the native
-      # `npm start` path, instead of silently ignoring it.
+      # .env.example is the checked-in baseline -- as of ticket 0016 it
+      # defaults to LLM_PROVIDER=inference (the real local model), not
+      # placeholder, so `docker compose up` with zero setup exercises the
+      # actual thing being evaluated. That does mean a fresh environment with
+      # no Ollama running will get a clear 500 rather than a silent
+      # placeholder fallback (ticket 0007's designed failure mode, not a
+      # crash) -- see backend/.env.example's own comments for the prereqs and
+      # the Groq fallback. backend/.env layers on top when present and
+      # overrides matching keys -- `required: false` means Compose doesn't
+      # error when it's absent.
       - backend/.env.example
       - path: backend/.env
         required: false

@@ -36,3 +36,5 @@ it currently sits in. A not-yet-started ticket's Log reads `_No work logged yet.
 | [0013-normalize-error-response-contract](finished/0013-normalize-error-response-contract.md) | P1 | finished | Phase 2 |
 | [0014-standardize-ticket-format](finished/0014-standardize-ticket-format.md) | P1 | finished | N/A |
 | [0015-cloud-model-benchmark](finished/0015-cloud-model-benchmark.md) | P1 | finished | Phase 3 |
+| [0016-docker-only-default-inference](finished/0016-docker-only-default-inference.md) | P1 | finished | Phase 4 |
+| [0017-containerize-ollama](blocked/0017-containerize-ollama.md) | P2 | blocked | Phase 4 |

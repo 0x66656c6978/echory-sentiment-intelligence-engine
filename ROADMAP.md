@@ -16,10 +16,13 @@ original strategy record.
 - **Reproducibility:** evaluators run the backend themselves locally. A local-model dependency is
   acceptable as long as the setup (`ollama pull ...`) is clearly documented; the inference endpoint
   must also always be swappable to an external provider with no code changes (see below).
-- **Docker confirmed preferred by Echory** (Pascal's email, 2026-09-03) for their automated
-  evaluation, alongside the native `npm start` path. He also asked for the inference endpoint to be
-  configurable via env vars (base URL + model name) so Echory can point the backend at an external
-  model if their container has trouble running local inference — see the provider design note below.
+- **Docker confirmed preferred by Echory** (Pascal's email, 2026-09-03). As of ticket 0016, Docker is
+  now the *only* supported way to run the backend — the native `npm start` path was dropped from the
+  documented setup entirely (Felix's explicit call, building on Pascal's stated preference). He also
+  asked for the inference endpoint to be configurable via env vars (base URL + model name) so Echory
+  can point the backend at an external model if their container has trouble running local inference
+  — see the provider design note below. `LLM_PROVIDER=inference` (the real local model) is the
+  default now too, not the rule-based placeholder — ticket 0016.
 
 ## Phases
 
@@ -117,3 +120,10 @@ original strategy record.
 - **STT dropped entirely** from scope — not required by the actual API contract.
 - **No exhaustive multi-model shootout** — a scoped shortlist (~3 models) judged against a small
   hand-labeled set, not the open-ended benchmark originally sketched in `AI_COLLABORATION.md`.
+- **Docker-only, local model default** (ticket 0016): native `npm start` dropped from the documented
+  setup entirely; `docker compose up` alone now runs the backend against the real `phi4-mini` model
+  by default (was the rule-based placeholder). Ollama itself still runs host-native, not
+  containerized — [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md) tracks that as a
+  separate, explicitly blocked decision (Felix is checking with Pascal whether GPU passthrough into
+  a container is workable on Echory's side before committing to it, given the latency risk of
+  silently falling back to CPU-only inference).
