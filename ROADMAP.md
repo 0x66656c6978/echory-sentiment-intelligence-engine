@@ -123,10 +123,13 @@ original strategy record.
 - **STT dropped entirely** from scope — not required by the actual API contract.
 - **No exhaustive multi-model shootout** — a scoped shortlist (~3 models) judged against a small
   hand-labeled set, not the open-ended benchmark originally sketched in `AI_COLLABORATION.md`.
-- **Docker-only, local model default** (ticket 0016): native `npm start` dropped from the documented
-  setup entirely; `docker compose up` alone now runs the backend against the real `phi4-mini` model
-  by default (was the rule-based placeholder). Ollama itself still runs host-native, not
-  containerized — [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md) tracks that as a
-  separate, explicitly blocked decision (Felix is checking with Pascal whether GPU passthrough into
-  a container is workable on Echory's side before committing to it, given the latency risk of
-  silently falling back to CPU-only inference).
+- **Docker-only** (ticket 0016): native `npm start` dropped from the documented setup entirely;
+  `docker compose up` is the one supported way to run the backend.
+- **Groq as the default inference provider** (ticket 0018, superseding ticket 0016's original
+  "default to local `phi4-mini`" call): Pascal's explicit answer to the GPU/install-assumption
+  question ticket 0017 raised — don't assume GPU passthrough into a container, don't assume any
+  install step on Echory's side, default to Groq. `phi4-mini` (local, via Ollama) remains a fully
+  supported, documented swap-in with zero latency-variance risk, just not the default anymore.
+  Containerizing Ollama itself was explicitly welcomed by Pascal as an *optional* addition (ticket
+  0017, resolved) — not attempted given the deadline, tracked as a candidate in
+  [ticket 0011](docs/tickets/open/0011-nice-to-haves.md).

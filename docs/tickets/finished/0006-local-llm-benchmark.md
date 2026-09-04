@@ -249,3 +249,10 @@ implementation is ticket 0007's explicit, separate scope, not re-done here.
 iterated the prompt once with a documented partial fix, and caught a real overfitting risk via an
 independent holdout set before finalizing. `phi4-mini` (70% holdout accuracy, best risk-level
 accuracy, 94ms latency margin) is the result.
+
+### 2026-09-04 — Superseded on the *default* question by ticket 0018 (Pascal's answer)
+This ticket's benchmark work and its `phi4-mini`-as-best-local-candidate conclusion are unchanged
+and still accurate. What changed is which provider ships as the shipped *default*: Pascal's
+explicit infrastructure constraints (no GPU passthrough assumed, no install step on Echory's side)
+rule out any local model as the default, regardless of benchmark quality. `phi4-mini` remains the
+documented local swap-in. See [ticket 0018](0018-groq-default-per-pascal.md).

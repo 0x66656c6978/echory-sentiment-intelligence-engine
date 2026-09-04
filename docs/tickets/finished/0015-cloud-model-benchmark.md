@@ -123,3 +123,11 @@ direct reuse when defending this decision. Honest acknowledgment carried through
 rather than smoothed over: this was a genuinely close call, not an obviously correct one, and the
 0%/14% figures were measured from Felix's own network to Groq -- an evaluator's environment isn't
 guaranteed to match.
+
+### 2026-09-04 — The "genuinely close call" resolved by Pascal, not by us
+Pascal's explicit answer (ticket 0018): Groq is the required default, given Echory's infrastructure
+constraints (no GPU passthrough assumed, no install step on their side) rule out defaulting to a
+local model regardless of its latency advantage. He explicitly confirmed the 14% tail-latency
+finding is "a good find" and that documenting the measurement and the decision *is* the task, not
+something to be engineered away. This ticket's `groq/qwen3.8-27b` numbers are exactly what makes
+that write-up (`ARCHITECTURE.md`, ticket 0018) credible rather than a guess.

@@ -6,16 +6,15 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      # .env.example is the checked-in baseline -- as of ticket 0016 it
-      # defaults to LLM_PROVIDER=inference (the real local model), not
-      # placeholder, so `docker compose up` with zero setup exercises the
-      # actual thing being evaluated. That does mean a fresh environment with
-      # no Ollama running will get a clear 500 rather than a silent
-      # placeholder fallback (ticket 0007's designed failure mode, not a
-      # crash) -- see backend/.env.example's own comments for the prereqs and
-      # the Groq fallback. backend/.env layers on top when present and
-      # overrides matching keys -- `required: false` means Compose doesn't
-      # error when it's absent.
+      # .env.example is the checked-in baseline -- as of ticket 0018 it
+      # defaults LLM_PROVIDER=inference to Groq (needs no GPU, no host
+      # install, just an API key -- per Pascal's explicit answer), so
+      # `docker compose up` exercises the actual thing being evaluated with
+      # no Docker-networking caveats. A real INFERENCE_API_KEY still has to
+      # be supplied (backend/.env.example's own comments explain how) -- a
+      # real key can never be a checked-in default. backend/.env layers on
+      # top when present and overrides matching keys -- `required: false`
+      # means Compose doesn't error when it's absent.
       - backend/.env.example
       - path: backend/.env
         required: false

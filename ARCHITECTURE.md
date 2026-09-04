@@ -5,12 +5,6 @@ Engineer technical assessment (Track A). Full supporting detail — benchmark nu
 decision logs, ticket-by-ticket history — lives in [`docs/`](docs/); this document is the
 synthesized version for review and interview defense.
 
-> **Status note:** one piece of this architecture is provisional. Ollama currently runs
-> host-native rather than in a container (see [Known limitations](#known-limitations) and
-> [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md)) — resolving that is blocked on
-> confirming with Pascal whether GPU passthrough into Docker is viable on Echory's evaluation
-> machine. Everything else here is settled.
-
 ## System overview
 
 ```mermaid
@@ -25,15 +19,15 @@ flowchart LR
         Log[("logs/llm-calls.jsonl")]
     end
 
-    subgraph host["Host machine"]
+    Cloud["Groq (default)\nqwen/qwen3.8-27b"]
+
+    subgraph host["Host machine (optional swap-in only)"]
         Ollama["Ollama\n(phi4-mini)"]
     end
 
-    Cloud["Groq\n(OpenAI-compatible cloud API)"]
-
     FE -- "POST /api/telemetry/stream" --> BE
-    BE -- "default: host.docker.internal:11434\n(OpenAI-compatible chat/completions)" --> Ollama
-    BE -. "INFERENCE_BASE_URL/MODEL/API_KEY\nzero code changes" .-> Cloud
+    BE -- "default: INFERENCE_BASE_URL/MODEL/API_KEY\n(OpenAI-compatible chat/completions)" --> Cloud
+    BE -. "optional: host.docker.internal:11434\nzero code changes" .-> Ollama
     BE --> Store
     BE --> Log
 ```
@@ -43,38 +37,50 @@ flowchart LR
 component fully containerized and locked down (ticket 0012, 0016). The frontend is a native dev
 server — not scoring-relevant per the challenge brief, so containerizing it wasn't worth the time
 (ticket 0009's log). The LLM sits behind one interface (`SentimentProvider`) regardless of where it
-actually runs, which is the mechanism the next section explains.
+actually runs — Groq by default, needing neither a GPU nor anything installed on the host, per
+Pascal's explicit answer (ticket 0018) that Echory's evaluation environment shouldn't be assumed to
+have either.
 
 ## LLM provider choice, and why
 
-**Chosen: `phi4-mini` (3.8B), served locally via Ollama, called through an OpenAI-compatible HTTP
-endpoint.** Full benchmark methodology and numbers: [`docs/benchmark-results.md`](docs/benchmark-results.md).
+**Shipped default: `groq/qwen3.8-27b`, cloud, via Groq's OpenAI-compatible endpoint.** This is a
+direct instruction from Pascal (Echory CTO), not our own first choice — see
+[ticket 0018](docs/tickets/finished/0018-groq-default-per-pascal.md) for the full email. His
+reasoning: don't assume GPU passthrough into a container, and don't assume any install step on
+Echory's side. A cloud endpoint is the only option that satisfies both unconditionally.
 
-**Hardware these numbers were produced on** (per Pascal's explicit request that latency figures be
-hardware-qualified): NVIDIA GeForce RTX 5080, 16GB VRAM (Windows Task Manager/WMI under-report this
-card's VRAM — confirmed via `nvidia-smi`, not assumed), Windows 11 Pro. All `phi4-mini` and
-`granite4.1:3b` latency numbers below and in `docs/benchmark-results.md` are GPU-accelerated on this
-card; an evaluator without comparable GPU access would see local inference run slower (see
-[Known limitations](#known-limitations)).
-
-The decision in one table (28 combined test cases — an 18-case hand-labeled set plus a 10-case
-independent holdout, used specifically to catch prompt-overfitting):
+**The tradeoff, measured, not glossed over** (28 combined test cases — an 18-case hand-labeled set
+plus a 10-case independent holdout, used specifically to catch prompt-overfitting; full methodology
+in [`docs/benchmark-results.md`](docs/benchmark-results.md)):
 
 | Model | Sentiment acc. | Risk acc. | Avg latency | % of calls > 500ms |
 |---|---|---|---|---|
-| **`phi4-mini` (chosen)** | 82% | 75% | 408ms | **0%** |
-| `groq/qwen3.8-27b` | 93% | 71% | 378ms | 14% |
+| **`groq/qwen3.8-27b` (shipped default)** | 93% | 71% | 378ms | **14%** |
+| `phi4-mini` (local swap-in) | 82% | 75% | 408ms | 0% |
 
-`qwen3.8-27b` beats `phi4-mini` on accuracy *and* average latency — a genuinely close call, not an
-easy win for the local model. It was declined anyway because its 14% chance of exceeding 500ms
-comes from Groq-side queue/network variance that no amount of prompt or code tuning fixes (measured
-directly, not assumed — see `docs/benchmark-results.md`'s prompt-shortening diagnostic), and the
-challenge scores latency as a pass/fail cliff, not a smooth penalty: *"consistently exceeding 500ms
-counts as a failure."* Risking the 25%-weighted latency dimension for a partial gain in the
-30%-weighted accuracy dimension — where `phi4-mini` already scores respectably — wasn't worth it.
-Both the accuracy and latency numbers above were re-verified end-to-end against the real, running
-server in ticket 0008 (real HTTP requests, not just raw model calls): p50 332ms, p95 366ms, max
-374ms, 0/28 over 500ms in steady state.
+`qwen3.8-27b` beats `phi4-mini` on accuracy *and* average latency — but it carries a measured ~14%
+chance of any individual call exceeding the 500ms line, from Groq-side queue/network variance that
+no amount of prompt or code tuning fixes (directly tested, not assumed: a shorter prompt doesn't
+help, since prefill time was never the bottleneck — see `docs/benchmark-results.md`'s
+prompt-shortening diagnostic). Before Pascal's answer, we had provisionally gone the other way —
+keeping the local model as default specifically to avoid that tail risk, since the challenge scores
+latency as a pass/fail cliff, not a smooth penalty (*"consistently exceeding 500ms counts as a
+failure"*). Pascal's answer settles which provider is the *default* on infrastructure grounds
+(no GPU/install assumption), independent of that latency argument — and he confirmed directly that
+documenting the measurement and the decision, rather than resolving the tradeoff away, is itself
+part of what's being assessed here. So: this is a known, accepted risk on the shipped default, not
+an oversight. Both the accuracy and latency numbers above were re-verified end-to-end against the
+real, running server (not just raw model calls) — ticket 0008 measured `phi4-mini`'s p50 332ms /
+p95 366ms / 0/28 over 500ms in steady state; the equivalent full end-to-end run was not repeated for
+`groq/qwen3.8-27b` specifically, so the 378ms/14% figures above are ticket 0015's raw-model-call
+measurements, not a ticket-0008-style server-level re-verification.
+
+**Hardware the local-swap-in numbers were produced on** (per Pascal's explicit request that latency
+figures be hardware-qualified): NVIDIA GeForce RTX 5080, 16GB VRAM (Windows Task Manager/WMI
+under-report this card's VRAM — confirmed via `nvidia-smi`, not assumed), Windows 11 Pro. The Groq
+numbers are cloud-side and hardware-independent on our end; they do depend on network conditions
+between the calling machine and Groq's servers, measured from Felix's own network — an evaluator's
+network has no guarantee of being comparable (`docs/benchmark-results.md` says this too).
 
 **What was ruled out, and why (full detail in `docs/benchmark-results.md`):**
 - Every "thinking"-capable local model (the Qwen3.x family, `gpt-oss`) — reasoning capability is
@@ -84,19 +90,20 @@ server in ticket 0008 (real HTTP requests, not just raw model calls): p50 332ms,
   1472ms, vs. `llama3.2:1b`'s 174ms).
 - `gemma4:e2b` — looked like the best local candidate at 89% accuracy on the original 18-case set,
   but dropped to 70% on the independent holdout — roughly 19 points of test-set overfitting, not
-  genuine quality. This is why the holdout set exists at all, and why it's mentioned here: the
-  headline number for the chosen model is holdout-validated, not just fit to the set used to design
-  the prompt.
+  genuine quality. This is why the holdout set exists at all, and why it's mentioned here: every
+  accuracy number quoted anywhere in this document is holdout-validated, not just fit to the set
+  used to design the prompt.
 - `groq/gpt-oss-20b` — a near-coin-flip latency failure (46% of calls over 500ms, p50 already at the
   line), an easy rule-out despite reasonable accuracy.
 
 **Swap-ins, both already wired and documented in `backend/.env.example`, zero code changes for
 either:**
-- `granite4.1:3b` (local) — the safer accuracy/latency tradeoff if `phi4-mini`'s numbers ever need
-  revisiting (70% accuracy, wider latency margin).
-- `groq/qwen3.8-27b` (cloud) — per Pascal's explicit request that the inference endpoint stay
-  swappable to an external provider if the local/containerized setup has problems on Echory's side.
-  This is a hard requirement, not a nice-to-have — see [ticket 0007](docs/tickets/finished/0007-inference-provider.md).
+- `phi4-mini` (local, via Ollama) — the zero-latency-variance alternative, for anyone who'd rather
+  accept a local-install step than Groq's tail-latency risk. Requires `ollama pull phi4-mini` on the
+  host; not containerized (ticket 0017 — Pascal explicitly welcomed this as an *optional* addition,
+  not a requirement, and it wasn't attempted given the deadline).
+- `granite4.1:3b` (local) — a safer accuracy/latency tradeoff than `phi4-mini` if those numbers ever
+  need revisiting (70% accuracy, wider latency margin). Swap via `INFERENCE_MODEL` alone.
 
 ### How the swap actually works
 
@@ -167,15 +174,15 @@ model selection process, not just the prompt:
   (`gemma4:e2b`) turned out to be ~19 points of test-set fitting rather than genuine quality. See
   `docs/benchmark-results.md` for that finding and the methodology it produced.
 
-## Known limitations
-
-- **Ollama is not yet containerized** (see the status note at the top) — it runs natively on the
-  host, reached via `host.docker.internal`. This is the one open architectural question in this
-  document; see [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md) for the two options
-  and why the decision is deliberately not made unilaterally (GPU passthrough into a container
-  isn't guaranteed — no path at all on Docker Desktop for Mac, needs the NVIDIA Container Toolkit
-  configured on Windows/Linux — and silently falling back to CPU-only inference risks the scored
-  latency dimension).
+- **Groq's tail latency is a known, accepted risk on the shipped default**, not a limitation that
+  slipped through — see [LLM provider choice](#llm-provider-choice-and-why) above for the full
+  measurement and why it's shipped anyway per Pascal's explicit instruction.
+- **The local swap-in (`phi4-mini`) requires an install step outside Docker** (`ollama pull`) and
+  isn't containerized — the one path in this project that isn't purely `docker compose up`, by
+  design, since it's optional rather than default (ticket 0017; Pascal explicitly welcomed
+  containerizing it as an optional addition, not required, and it wasn't attempted given the
+  deadline). Doing so would also reintroduce the GPU-passthrough risk Pascal specifically asked us
+  not to assume, so it stays a nice-to-have rather than something to rush in.
 - **Vite dev-server vulnerabilities accepted, not fixed**: `npm audit` flags a moderate esbuild
   dev-server CORS advisory and a high-severity Vite `server.fs.deny` bypass on Windows — both
   dev-server-only, not present in a production build, and not reachable outside `localhost`. The
@@ -199,8 +206,10 @@ ties broken by recency. Returns `404` for an unknown session rather than an empt
 
 ## What would come next with more time
 
-1. Resolve ticket 0017 with Pascal and containerize Ollama if GPU passthrough is confirmed workable
-   — the last piece needed for a genuinely single-command, fully self-contained `docker compose up`.
+1. Containerize the optional local-Ollama swap-in behind a Compose profile (`docker compose
+   --profile local-llm up`), so choosing it doesn't require a separate host install — Pascal
+   explicitly welcomed this as an addition, just not as a requirement (ticket 0017); not attempted
+   given the deadline.
 2. A persistent session store (Redis) if this ever needed to run as more than one backend instance.
 3. The Vite 8 upgrade, once a Node version bump is acceptable.
 4. A scripted WebSocket streaming demo, purely for a livelier Loom walkthrough — cosmetic, not

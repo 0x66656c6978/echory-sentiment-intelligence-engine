@@ -21,10 +21,11 @@ provider despite editing `backend/.env` (see [ticket 0012](../finished/0012-dock
 
 Whether Ollama itself gets containerized (so `docker compose up` needs literally nothing installed
 beforehand) is a separate, larger question, split out to
-[ticket 0017](../blocked/0017-containerize-ollama.md) — blocked on confirming GPU passthrough is
-workable on Echory's side, since getting that wrong risks silently falling back to slow CPU
-inference and blowing the scored 500ms latency line. This ticket covers everything that doesn't
-depend on that answer.
+[ticket 0017](0017-containerize-ollama.md) (resolved since — see its and
+[ticket 0018](0018-groq-default-per-pascal.md)'s logs) — at the time this was written, blocked on
+confirming GPU passthrough is workable on Echory's side, since getting that wrong risks silently
+falling back to slow CPU inference and blowing the scored 500ms latency line. This ticket covers
+everything that doesn't depend on that answer.
 
 ## Definition of done
 
@@ -73,3 +74,14 @@ zero-setup **placeholder-mode** baseline" — no longer accurate) and `README.md
 removed the "Native (matches the evaluation harness)" framing entirely, restructured around
 "Backend (Docker)" / "Frontend (native, unchanged)" / "Testing," and added the Ollama prerequisite
 and Groq-switch instructions inline rather than only in `.env.example`'s comments.
+
+### 2026-09-04 — Default provider reversed by ticket 0018 (Pascal's answer)
+This ticket's real fix (Docker honoring `backend/.env`, the `host.docker.internal` networking
+correction) stays exactly as implemented and still matters. What's reversed is which provider is
+*default*: Pascal's answer to the open question this ticket raised (documented in
+[ticket 0017](0017-containerize-ollama.md)) was "don't assume GPU or a host install for the
+default" — which rules out local `phi4-mini` as default regardless of the reasoning that made sense
+at the time this ticket was written (before that answer existed). Groq is now the default; see
+[ticket 0018](0018-groq-default-per-pascal.md). The zero-setup-fallback tradeoff this ticket
+accepted (a fresh clone with nothing configured fails every request with a clear 500) is unaffected
+by this change in substance, only in which provider that clear failure would now be about.

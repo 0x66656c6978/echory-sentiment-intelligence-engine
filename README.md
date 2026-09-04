@@ -3,12 +3,12 @@
 Real-time sentiment/nuance analysis engine for a simulated AI negotiation copilot, built for
 Echory's Senior Full-Stack Engineer technical assessment (Track A — Full Stack).
 
-**Status:** Phases 1-4 done (backend, frontend, Docker, tests, LLM observability, real LLM
-inference wired up and swappable to any OpenAI-compatible endpoint, latency/concurrency verified
-end-to-end, full UI polish pass, `ARCHITECTURE.md` written). One open architectural question
-remains — see [ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md) — blocked on Pascal's
-input, not on anything technical. See [ROADMAP.md](ROADMAP.md) for the phase plan and
-[docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
+**Status:** All required (Track A) work done. Backend, frontend, Docker, tests, LLM observability,
+real LLM inference (Groq by default, local Ollama as a documented swap-in), latency/concurrency
+verified end-to-end, full UI polish, `ARCHITECTURE.md` written, Track B session-summary endpoint
+included. Remaining open items are explicitly optional nice-to-haves
+([ticket 0011](docs/tickets/open/0011-nice-to-haves.md)). See [ROADMAP.md](ROADMAP.md) for the phase
+plan and [docs/tickets/index.md](docs/tickets/index.md) for task-level tracking.
 
 - Original challenge brief: [docs/CHALLENGE.md](docs/CHALLENGE.md)
 - **Architecture** (system diagram, LLM provider choice, streaming/concurrency, sarcasm/hidden-intent
@@ -26,37 +26,36 @@ input, not on anything technical. See [ROADMAP.md](ROADMAP.md) for the phase pla
 
 ## Setup
 
-**Docker-only, by design (ticket 0016)** — per Pascal's explicit preference for Docker (his email,
-2026-09-03), the backend has no supported native `npm start` path anymore; it always runs in a
-container. The one external prerequisite Docker can't provide itself is Ollama (see the note below).
+**Docker-only, by design (ticket 0016)** — the backend has no supported native `npm start` path;
+it always runs in a container. No GPU acceleration or host-side install step is assumed anywhere in
+the default path (per Pascal's explicit answer, ticket 0018) — the one thing you need to supply is
+a free-tier Groq API key.
 
 ### Backend
 
 ```bash
-ollama pull phi4-mini   # ~2.5GB, one-time -- see the prerequisite note below
+cp backend/.env.example backend/.env
+# edit backend/.env: paste a free-tier key from https://console.groq.com/keys into INFERENCE_API_KEY
 docker compose up --build
 ```
 
-Runs the backend on `http://localhost:3000` with **the real local LLM (`phi4-mini`) as the default**
-— `docker compose up` alone, no `.env` file needed, exercises the actual thing being evaluated, not
-a rule-based stand-in (~73MB image download, ~5s cold start — see
-[ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for the measurement; the LLM's own
-cold-start model load adds a few more seconds on the very first request).
+Runs the backend on `http://localhost:3000` against **Groq (`qwen/qwen3.8-27b`) as the default**
+inference provider — no GPU, no local model install, nothing beyond the API key (~73MB image
+download, ~5s cold start — see [ticket 0012](docs/tickets/finished/0012-dockerize-backend.md) for
+the measurement). This default carries a measured ~14% chance of an individual call exceeding the
+500ms line, from Groq-side queue/network variance — a real, investigated tradeoff, not an oversight;
+see [ARCHITECTURE.md](ARCHITECTURE.md#llm-provider-choice-and-why) and
+[docs/benchmark-results.md](docs/benchmark-results.md) for the full measurement and why it's shipped
+as the default anyway.
 
-**Prerequisite**: Ollama must be installed and running natively on the host with `phi4-mini` pulled
-(`ollama pull phi4-mini`) — it is **not yet containerized** (open question, see
-[ticket 0017](docs/tickets/blocked/0017-containerize-ollama.md), blocked on confirming GPU
-passthrough is workable on Echory's side). Without Ollama running, requests fail with a clear
-`500` (ticket 0007's designed failure mode, not a crash) rather than silently falling back.
-
-**If Ollama has trouble on your side**, switching to a cloud provider needs zero code changes — edit
-`backend/.env` (falls back to `.env.example`'s defaults if this file doesn't exist; create it with
-`cp backend/.env.example backend/.env` first) and replace the three `INFERENCE_*` lines with the
-Groq block already commented in that file, then `docker compose up -d` to pick it up. See
-`backend/.env.example` for the full set of options — including the rule-based `LLM_PROVIDER=placeholder`
-fallback if you'd rather not install Ollama or hold an API key at all — and
-[docs/benchmark-results.md](docs/benchmark-results.md) for why `phi4-mini` was chosen over Groq by
-default despite Groq's own accuracy edge.
+**If you'd rather run the LLM locally** (zero latency-variance risk, but needs Ollama installed on
+the host — the one path in this project that isn't purely `docker compose up`): swap the three
+`INFERENCE_*` lines in `backend/.env` for the local-Ollama block already in `backend/.env.example`,
+run `ollama pull phi4-mini` (~2.5GB, one-time) on the host, then `docker compose up -d` to pick up
+the change. `LLM_PROVIDER=placeholder` (rule-based, no LLM, no API key) is also available as a
+manual override if you just want to see the API/UI working — see `backend/.env.example` for the
+full set of options. Without a configured, reachable provider, requests fail with a clear `500`
+(ticket 0007's designed failure mode, not a crash) rather than silently falling back.
 
 ### Frontend
 

@@ -51,3 +51,32 @@ blocker, so filed under `blocked/` per the project's ticket-status convention ra
 implicit TODO. See ticket 0016's log for the full context of how this came up (fixing the
 `docker compose up` env-file bug surfaced the question of what "Docker-only" should mean for Ollama
 specifically).
+
+### 2026-09-04 — Resolved by Pascal's answer: neither of the two options above, a third
+
+Pascal's email (translated): *"Please don't assume GPU acceleration in the container, and don't
+assume any installation script on our side. [...] You're welcome to additionally include a local
+LLM container, but then it must be optional and not a prerequisite for starting."*
+
+This settles more than the GPU question — it rules out **both** options this ticket originally
+framed as the choice. Not option 1 (containerize Ollama as part of the default path): a container
+without assumed GPU passthrough risks exactly the latency regression this ticket worried about, and
+Pascal explicitly says don't assume it. Not option 2 either, as it stood (host-native Ollama as the
+*default*, reached via `host.docker.internal`): that requires installing something on Echory's
+machine before `docker compose up` works at all, which Pascal separately ruled out ("kein
+Installationsskript... voraussetzen").
+
+The actual resolution, worked out with ticket 0018: the *default* provider becomes Groq (cloud,
+needs no install and no GPU assumption at all, just an API key) — see
+[ticket 0018](../finished/0018-groq-default-per-pascal.md). Local Ollama stays available exactly as
+it already works today (host-native, `host.docker.internal`), demoted from default to a documented,
+easy opt-in swap — which already satisfies "optional and not a prerequisite to start," so nothing
+needed to change mechanically here, only which path is the default.
+
+**What's still genuinely open**: Pascal's "you're welcome to additionally include a local LLM
+container" invites a nicer version of the optional path — a real `ollama` service in
+`docker-compose.yml` behind a Compose profile, so choosing local-first is `docker compose --profile
+local-llm up` instead of "go install Ollama yourself first." Not attempted in this ticket given the
+2026-09-05 deadline and Pascal's own framing of it as a nice-to-have, not a requirement — moved to
+[ticket 0011](../open/0011-nice-to-haves.md) as a candidate if time remains. Closing this ticket as
+resolved rather than leaving it open against that stretch item.
